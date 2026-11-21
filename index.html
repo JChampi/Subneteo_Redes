@@ -1,0 +1,2009 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SubnetLab · Subneteo IPv4</title>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('subnetlab-theme')}catch(e){}
+if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+document.documentElement.setAttribute('data-theme',t)})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eaeff4; --panel:#ffffff; --panel-2:#f6f8fa; --ink:#1f2933; --muted:#5b6b7b; --line:#d6dee6;
+  --primary:#2c6e9b; --primary-soft:#e2edf5; --primary-dark:#1f4f70;
+  --teal:#357f6e; --teal-soft:#e0f0ea;
+  --amber:#b7792a; --amber-soft:#f7ecda;
+  --red:#b04a3c; --red-soft:#f6e1dc;
+  --net:#2c6e9b; --sub:#b7792a; --host:#357f6e;
+  --shadow:0 1px 2px rgba(20,40,60,.06),0 6px 20px rgba(20,40,60,.07);
+  --radius:14px;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --btn:#2c6e9b; --btn-h:#1f4f70; --on-accent:#fff;
+  --nav-bg:rgba(255,255,255,.86); --grid1:rgba(44,110,155,.06); --grid2:rgba(44,110,155,.035);
+  --note-b:#ead5b1; --note-ink:#6d4c1c; --ok-ink:#285f53; --hint-ink:#7a3a2f;
+  --cable:#8fa9bf; --cable2:#9db3c6; --node:#4f7594; --lbl:#6f8aa1;
+  --paper:#fbfcfd; --paper-line:rgba(44,110,155,.07);
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#121920; --panel:#1b242d; --panel-2:#212c37; --ink:#e2e8ee; --muted:#9aabba; --line:#33414e;
+  --primary:#72a6ca; --primary-soft:#22374a; --primary-dark:#acd0e8;
+  --teal:#6db8a4; --teal-soft:#1d3731;
+  --amber:#d9a75f; --amber-soft:#3a2f1e;
+  --red:#de8a7c; --red-soft:#3e2622;
+  --net:#3f7ea9; --sub:#b07d34; --host:#3f8d7a;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  --btn:#3a7cab; --btn-h:#2f6890; --on-accent:#0f171d;
+  --nav-bg:rgba(22,30,38,.86); --grid1:rgba(114,166,202,.07); --grid2:rgba(114,166,202,.03);
+  --note-b:#5a4527; --note-ink:#ecc995; --ok-ink:#a5dccb; --hint-ink:#f0b3a8;
+  --cable:#4b6377; --cable2:#55708a; --node:#7fa3c0; --lbl:#7d93a6;
+  --paper:#18212a; --paper-line:rgba(114,166,202,.06);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);line-height:1.55;
+  background-color:var(--bg);
+  background-image:
+    linear-gradient(var(--grid1) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid1) 1px,transparent 1px),
+    linear-gradient(var(--grid2) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid2) 1px,transparent 1px);
+  background-size:160px 160px,160px 160px,32px 32px,32px 32px;
+  background-attachment:fixed;
+}
+.lab-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.32}
+.lab-bg svg{width:100%;height:100%}
+.lab-bg .cable{stroke:var(--cable);stroke-width:2;fill:none;stroke-dasharray:6 6}
+.lab-bg .cable.solid{stroke-dasharray:none;stroke:var(--cable2)}
+.lab-bg .node{color:var(--node)}
+.lab-bg .lbl{font:11px var(--mono);fill:var(--lbl)}
+.lab-bg .pkt{fill:#b7792a}
+.lab-bg .pkt.b{fill:#357f6e}
+main,header,footer{position:relative;z-index:1}
+a{color:var(--primary)}
+code,.mono{font-family:var(--mono)}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:20;background:var(--nav-bg);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:1180px;margin:auto;display:flex;align-items:center;gap:18px;padding:10px 20px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--primary-dark);text-decoration:none;font-size:1.1rem}
+.brand svg{width:30px;height:30px;color:var(--primary)}
+.nav-links{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.nav-links a{text-decoration:none;color:var(--muted);font-weight:500;font-size:.92rem;padding:6px 10px;border-radius:8px;transition:.2s}
+.nav-links a:hover,.nav-links a.active{background:var(--primary-soft);color:var(--primary-dark)}
+.menu-btn{display:none;margin-left:auto;background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:1rem;cursor:pointer}
+
+/* LAYOUT */
+.wrap{max-width:1180px;margin:auto;padding:0 20px}
+section{padding:70px 0 30px;scroll-margin-top:60px}
+.sec-head{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.sec-icon{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:var(--primary-soft);color:var(--primary);flex:none}
+.sec-icon svg{width:26px;height:26px}
+h2{font-size:1.9rem;margin:0;letter-spacing:-.02em}
+h3{margin:0 0 8px;font-size:1.15rem}
+.lead{color:var(--muted);max-width:780px;margin:4px 0 26px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
+.grid{display:grid;gap:18px}
+.grid>*,.sim>*,.prac>*,.hero-grid>*{min-width:0}
+.g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--primary-soft);color:var(--primary-dark)}
+.tag.teal{background:var(--teal-soft);color:var(--teal)} .tag.amber{background:var(--amber-soft);color:var(--amber)} .tag.red{background:var(--red-soft);color:var(--red)}
+
+/* HERO */
+.hero{padding:70px 0 40px}
+.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
+.hero h1{font-size:clamp(2.1rem,4.5vw,3.3rem);line-height:1.08;margin:12px 0 16px;letter-spacing:-.03em}
+.hero h1 span{color:var(--primary)}
+.hero p{color:var(--muted);font-size:1.08rem;max-width:560px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid transparent;background:var(--btn);color:#fff;font:600 .93rem Inter,sans-serif;padding:10px 16px;border-radius:10px;cursor:pointer;text-decoration:none;transition:transform .15s,background .2s,box-shadow .2s}
+.btn:hover{background:var(--btn-h);transform:translateY(-1px)}
+.btn svg{width:18px;height:18px}
+.btn.ghost{background:var(--panel);color:var(--primary-dark);border-color:var(--line)}
+.btn.ghost:hover{background:var(--primary-soft)}
+.btn.teal{background:#357f6e} .btn.teal:hover{background:#2a6658}
+.btn.amber{background:var(--amber)} .btn.amber:hover{background:#9a6522}
+.btn.sm{padding:7px 12px;font-size:.85rem}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.hero-card{position:relative}
+.term{border:1px solid var(--line);background:#1f2d3a;color:#d9e2ea;border-radius:var(--radius);padding:18px 20px;font-family:var(--mono);font-size:.9rem;box-shadow:0 20px 40px rgba(20,40,60,.2)}
+.term-top{display:flex;gap:6px;margin-bottom:12px}
+.term-top i{width:11px;height:11px;border-radius:50%;background:#5b6b7b;display:block}
+.term-top i:nth-child(1){background:#c5695a}.term-top i:nth-child(2){background:#d0a54f}.term-top i:nth-child(3){background:#6aa587}
+.term .row{display:flex;justify-content:space-between;gap:10px;padding:3px 0;opacity:0;animation:fadeUp .5s forwards}
+.term .k{color:#8fa9bf}.term .v{color:#f0e2c4}.term .g{color:#9fd0bb}
+.term hr{border:0;border-top:1px dashed #4a5c6c;margin:8px 0}
+.floating{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;display:flex;gap:10px;align-items:center;font-size:.85rem;animation:float 5s ease-in-out infinite}
+.floating svg{width:28px;height:28px;color:var(--teal)}
+.f1{top:-22px;right:-10px}.f2{bottom:-26px;left:-16px;animation-delay:-2.5s}.f2 svg{color:var(--amber)}
+@keyframes float{50%{transform:translateY(-8px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.stats{display:flex;gap:26px;margin-top:30px;flex-wrap:wrap}
+.stats div{font-size:.85rem;color:var(--muted)}
+.stats b{display:block;font-size:1.4rem;color:var(--ink)}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* CONCEPTS */
+.concept svg.ic{width:38px;height:38px;color:var(--primary);margin-bottom:8px}
+.concept p{margin:0;color:var(--muted);font-size:.95rem}
+.formula{font-family:var(--mono);background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;font-size:.9rem}
+.formula b{color:var(--primary-dark)}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--panel)}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--panel-2);font-weight:600;color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:var(--primary-soft)}
+td.mono,td .mono{font-family:var(--mono)}
+tr.hl{background:var(--amber-soft)!important}
+tr:last-child td{border-bottom:0}
+
+/* BITS */
+.bits{display:flex;flex-wrap:nowrap;gap:2px;font-family:var(--mono);align-items:center;overflow-x:auto;padding:2px 0 4px}
+.bit{flex:0 0 auto;width:clamp(14px,1.6vw,21px);height:28px;display:grid;place-items:center;border-radius:5px;font-size:.85rem;font-weight:600;color:#fff;opacity:0;animation:pop .35s forwards}
+.bit.n{background:var(--net)} .bit.s{background:var(--sub)} .bit.h{background:var(--host)} .bit.x{background:#9aa8b5}
+.bit-gap{width:8px;text-align:center;color:var(--muted);font-weight:700}
+@keyframes pop{from{opacity:0;transform:scale(.4) rotateX(90deg)}to{opacity:1;transform:none}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;color:var(--muted);margin-top:10px}
+.legend span::before{content:"";display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+
+/* GUIDE */
+.review{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px}
+.review .card{border-left:4px solid var(--teal)}
+.review .card.warn{border-left-color:var(--amber)}
+.review ul{margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:.94rem}
+.review li{margin:4px 0}
+.inline-form{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.8rem;font-weight:600;color:var(--muted)}
+input,select{font:500 .95rem var(--mono);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink);transition:border .2s,box-shadow .2s;min-width:0}
+input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+select{font-family:Inter,sans-serif}
+.steps{display:flex;flex-direction:column;gap:14px;margin-top:20px}
+.step{display:grid;grid-template-columns:48px 1fr;gap:14px;animation:fadeUp .5s both}
+.step-num{width:44px;height:44px;border-radius:50%;background:var(--btn);color:#fff;font-weight:700;display:grid;place-items:center;position:relative}
+.step:not(:last-child) .step-num::after{content:"";position:absolute;top:48px;left:21px;width:2px;height:calc(100% + 0px);background:var(--line)}
+.step .card{padding:16px 18px}
+.step p{margin:4px 0;color:var(--muted)}
+.calc{font-family:var(--mono);background:var(--panel-2);border:1px dashed var(--line);border-radius:10px;padding:10px 14px;margin:8px 0;white-space:pre-wrap;font-size:.9rem;overflow-x:auto}
+.calc .hi{color:var(--primary-dark);font-weight:700}
+.calc .am{color:var(--amber);font-weight:700}
+.calc .ok{color:var(--teal);font-weight:700}
+.note{background:var(--amber-soft);border:1px solid var(--note-b);border-radius:10px;padding:10px 14px;font-size:.9rem;color:var(--note-ink);margin-top:8px}
+.note.info{background:var(--primary-soft);border-color:var(--line);color:var(--primary-dark)}
+.note.ok{background:var(--teal-soft);border-color:var(--line);color:var(--ok-ink)}
+.guide-ctrl{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:center}
+.progress{flex:1;min-width:140px;height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--teal);width:0;transition:width .4s}
+.and-grid{display:grid;grid-template-columns:auto repeat(8,26px) auto;gap:4px 3px;align-items:center;font-family:var(--mono);margin:8px 0;overflow-x:auto}
+.and-grid .lbl{font-size:.8rem;color:var(--muted);padding-right:8px}
+.and-grid .c{height:28px;display:grid;place-items:center;border-radius:5px;background:var(--panel-2);border:1px solid var(--line);font-weight:600;opacity:0;animation:pop .3s forwards}
+.and-grid .c.one{background:var(--primary-soft);color:var(--primary-dark)}
+.and-grid .c.res{background:var(--teal-soft);color:var(--teal)}
+.and-grid .dec{padding-left:10px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-family:var(--mono);font-size:.82rem;padding:4px 9px;border-radius:7px;background:var(--panel-2);border:1px solid var(--line);opacity:0;animation:fadeUp .35s forwards}
+.chip.on{background:var(--teal);color:var(--on-accent);border-color:var(--teal)}
+.chip.nx{background:var(--amber-soft);border-color:var(--amber)}
+.result-tbl td:first-child{font-weight:600}
+.result-tbl .arrow{color:var(--amber);font-family:var(--mono);font-size:.85rem}
+
+/* SIMULATORS */
+.sim{display:grid;grid-template-columns:330px 1fr;gap:18px;align-items:start}
+.sim-form{display:flex;flex-direction:column;gap:12px;position:sticky;top:76px}
+.sim-out{min-width:0;display:flex;flex-direction:column;gap:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:12px;animation:fadeUp .4s both}
+.kpi small{display:block;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.kpi b{font-family:var(--mono);font-size:1.05rem;word-break:break-all}
+.blocks{display:grid;grid-template-columns:repeat(auto-fill,minmax(26px,1fr));gap:4px}
+.blk{aspect-ratio:1;border-radius:5px;background:var(--primary-soft);border:1px solid var(--line);opacity:0;animation:pop .3s forwards;position:relative;cursor:default}
+.blk.cur{background:var(--amber);border-color:var(--amber)}
+.blk:hover{background:var(--primary);}
+.err{color:var(--red);font-weight:600;font-size:.9rem}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+.more{margin-top:10px;text-align:center}
+
+.vlsm-rows{display:flex;flex-direction:column;gap:8px}
+.vrow{display:grid;grid-template-columns:1fr 90px 34px;gap:6px;animation:fadeUp .3s both}
+.vrow input{width:100%}
+.icon-btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;cursor:pointer;color:var(--red);font-size:1.1rem;line-height:1}
+.icon-btn:hover{background:var(--red-soft)}
+.vbar{display:flex;height:48px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:repeating-linear-gradient(45deg,var(--panel-2),var(--panel-2) 6px,var(--line) 6px,var(--line) 12px)}
+.vseg{height:100%;display:grid;place-items:center;color:#fff;font-size:.72rem;font-weight:600;overflow:hidden;white-space:nowrap;border-right:1px solid rgba(255,255,255,.6);transform-origin:left;animation:grow .6s both}
+@keyframes grow{from{transform:scaleX(0)}to{transform:none}}
+.vlegend{display:flex;flex-wrap:wrap;gap:10px;font-size:.82rem;margin-top:8px}
+.vlegend span{display:flex;align-items:center;gap:6px}
+.vlegend i{width:12px;height:12px;border-radius:3px;display:block}
+.explain{margin:0;padding-left:20px;color:var(--muted);font-size:.92rem}
+.explain li{margin:5px 0;animation:fadeUp .4s both}
+.explain b{color:var(--ink)}
+
+/* PRACTICE */
+.prac-top{display:flex;gap:12px;flex-wrap:wrap;align-items:end;justify-content:space-between}
+.problem{font-family:var(--mono);font-size:1.6rem;font-weight:700;color:var(--primary-dark)}
+.prac{display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:18px;align-items:start}
+.pfields{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.pf{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:12px;transition:border .25s,background .25s}
+.pf label{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:6px}
+.pf input{width:100%}
+.pf.ok{border-color:var(--teal);background:var(--teal-soft)}
+.pf.bad{border-color:var(--red);background:var(--red-soft);animation:shake .35s}
+.pf.auto{border-color:var(--primary);background:var(--primary-soft)}
+.pf .hint{font-size:.82rem;margin-top:6px;color:var(--hint-ink);display:none}
+.pf.bad .hint{display:block}
+.pf .st{font-size:.95rem}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.score{display:flex;align-items:center;gap:12px;margin:14px 0}
+.score b{font-size:1.2rem}
+.log{max-height:520px;overflow:auto}
+.log ol{padding-left:20px;margin:6px 0 0}
+.log li{margin-bottom:10px;font-size:.9rem;color:var(--muted);animation:fadeUp .4s both}
+.log li b{color:var(--ink)}
+.log .calc{font-size:.82rem;margin:4px 0}
+
+/* PRACTICE MODE / VLSM */
+.mode-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:18px;border-bottom:1px dashed var(--line)}
+.seg{display:inline-flex;background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px}
+.seg button{display:flex;align-items:center;gap:6px;border:0;background:none;color:var(--muted);font:600 .9rem Inter,sans-serif;padding:7px 14px;border-radius:8px;cursor:pointer;transition:background .2s,color .2s}
+.seg button svg{width:17px;height:17px}
+.seg button.on{background:var(--btn);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.seg button:not(.on):hover{background:var(--primary-soft);color:var(--primary-dark)}
+#pmFija,#pmVlsm{animation:fadeUp .35s both}
+.req-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.req-chips span{font-size:.8rem;padding:3px 10px;border-radius:999px;background:var(--primary-soft);color:var(--primary-dark);font-weight:600}
+.qtbl td{padding:6px 6px;vertical-align:top}
+.qtbl td:first-child{font-weight:600;white-space:nowrap}
+.qtbl input{width:100%;min-width:118px;font-size:.84rem;padding:7px 8px}
+.qtbl input.qp{min-width:58px;width:62px}
+.qtbl input.ok{border-color:var(--teal);background:var(--teal-soft)}
+.qtbl input.bad{border-color:var(--red);background:var(--red-soft);animation:shake .35s}
+.qtbl input.auto{border-color:var(--primary);background:var(--primary-soft)}
+.qtbl tbody tr:hover{background:transparent}
+.qtbl tr.focus td{background:var(--amber-soft)}
+.q-hint{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.q-hint div{background:var(--red-soft);color:var(--hint-ink);border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:.86rem;animation:fadeUp .3s both}
+
+/* REFERENCE */
+.octet-conv{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;margin:10px 0}
+.ob{display:flex;flex-direction:column;align-items:center;gap:4px}
+.ob small{font-size:.7rem;color:var(--muted);font-family:var(--mono)}
+.ob button{width:40px;height:44px;border-radius:9px;border:1px solid var(--line);background:var(--panel-2);font:700 1.1rem var(--mono);cursor:pointer;transition:.2s}
+.ob button.on{background:var(--btn);color:#fff;border-color:var(--btn);transform:translateY(-2px)}
+.conv-out{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-left:10px;color:var(--primary-dark)}
+.pow{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.pw{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;transition:transform .2s,border .2s}
+.pw:hover{transform:translateY(-3px);border-color:var(--primary)}
+.pw .e{font-family:var(--mono);color:var(--muted);font-size:.9rem}
+.pw .e sup{font-size:.7rem}
+.pw .val{font-family:var(--mono);font-size:1.25rem;font-weight:700;color:var(--primary-dark)}
+.pw .h{font-size:.72rem;color:var(--teal)}
+.cls-badge{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;color:#fff;font-weight:800}
+
+/* VLSM: desglose de dispositivos */
+.vrow{padding-bottom:8px;border-bottom:1px dashed var(--line)}
+.vdev{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.vdev label{display:flex;align-items:center;gap:3px;color:var(--muted)}
+.vdev svg{width:18px;height:18px;flex:none;color:var(--primary)}
+.vdev input{padding:5px 6px;font-size:.8rem;width:100%}
+.dev-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:.75rem;color:var(--muted)}
+.dev-legend span{display:flex;align-items:center;gap:3px}
+.dev-legend svg{width:16px;height:16px;color:var(--primary)}
+
+/* TOPOLOGÍA */
+.topo-form{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:14px}
+.topo-form .field input{width:84px}
+.topo-form .field label{display:flex;align-items:center;gap:4px}
+.topo-form .field label svg{width:18px;height:18px;color:var(--primary)}
+.topo-ctrl{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.topo-ctrl select{max-width:240px;font-family:var(--mono);font-size:.82rem}
+.topo-stage{position:relative}
+.topo-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;
+  background-color:var(--panel-2);background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:18px 18px}
+.topo-wrap svg{display:block;width:100%;height:auto}
+.t-cable{stroke:var(--muted);stroke-width:2;opacity:.75;transition:stroke .2s}
+.t-cable.up{stroke-width:3;opacity:.9}
+.t-cable.act{stroke:var(--amber);stroke-width:4;opacity:1}
+.t-led{fill:#3d9f5f;animation:led 2.4s ease-in-out infinite}
+@keyframes led{50%{opacity:.45}}
+.t-node{cursor:pointer}
+.t-node .t-halo{fill:transparent;stroke:transparent;stroke-width:3;transition:fill .2s,stroke .2s}
+.t-node:hover .t-halo{fill:var(--primary-soft)}
+.t-node.src .t-halo{stroke:var(--amber);fill:var(--amber-soft)}
+.t-node.dst .t-halo{stroke:var(--teal);fill:var(--teal-soft)}
+.t-node.hit .t-halo{animation:hit .6s}
+@keyframes hit{0%{fill:var(--teal);r:20}100%{fill:transparent}}
+.t-lbl{font:600 11px Inter,sans-serif;fill:var(--ink)}
+.t-sub{font:10px var(--mono);fill:var(--muted)}
+.t-if{font:600 10px var(--mono);fill:var(--primary-dark)}
+.t-ifbg{fill:var(--panel);stroke:var(--line)}
+.t-clu{fill:var(--panel);stroke:var(--muted);stroke-dasharray:4 3}
+.t-pkt rect{stroke:#fff;stroke-width:1}
+.t-pkt.req rect{fill:#c98a2b}.t-pkt.rep rect{fill:#357f6e}
+.t-pkt path{stroke:#fff;stroke-width:1.3;fill:none}
+.t-pop{position:absolute;z-index:6;width:300px;max-width:calc(100% - 16px);background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.22);animation:fadeUp .25s both;font-size:.86rem}
+.t-pop[hidden]{display:none}
+.t-pop header{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--primary-soft);border-radius:12px 12px 0 0;border-bottom:1px solid var(--line)}
+.t-pop header svg{width:28px;height:28px}
+.t-pop header b{flex:1}
+.t-pop header button{border:0;background:none;font-size:1.2rem;cursor:pointer;color:var(--muted)}
+.t-pop .pb{padding:10px 12px}
+.t-pop dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:0}
+.t-pop dt{color:var(--muted)} .t-pop dd{margin:0;font-family:var(--mono);font-weight:600;word-break:break-all}
+.t-pop .sect{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin:10px 0 4px}
+.t-pop .plist{max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.t-pop .plist div{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;border-bottom:1px solid var(--line);cursor:pointer;font-family:var(--mono);font-size:.8rem}
+.t-pop .plist div:hover{background:var(--primary-soft)}
+.t-pop .t-ping{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.t-pop select{font-size:.8rem;font-family:var(--mono)}
+.t-console{margin-top:12px;background:#17222c;color:#d3e2d8;font:.8rem/1.5 var(--mono);padding:12px 14px;border-radius:10px;max-height:240px;overflow:auto;white-space:pre-wrap;border:1px solid var(--line)}
+.t-console .c-cmd{color:#f0d9a8}.t-console .c-ok{color:#9fd0bb}.t-console .c-info{color:#8fb3cf}
+.t-warn{margin-bottom:10px}
+.t-pickbar{display:none;margin-bottom:10px}
+.t-pickbar.on{display:block}
+
+/* THEME BUTTON */
+.theme-btn{margin-left:8px;width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--primary-dark);cursor:pointer;display:grid;place-items:center;transition:background .2s,transform .3s}
+.theme-btn:hover{background:var(--primary-soft);transform:rotate(-15deg)}
+.theme-btn svg{width:20px;height:20px}
+.theme-btn .moon{display:none}
+:root[data-theme="dark"] .theme-btn .sun{display:none}
+:root[data-theme="dark"] .theme-btn .moon{display:block}
+body,.card,.nav,.pf,input,select,.kpi,.pw{transition:background-color .35s,border-color .35s,color .35s}
+
+/* EJEMPLO DESARROLLADO */
+.worked{margin-bottom:22px;padding:26px 28px;font-family:var(--mono);font-size:.92rem;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--paper-line) 1px,transparent 1px);background-size:100% 28px;
+  border-left:5px solid var(--amber);position:relative;overflow:hidden}
+.worked::after{content:"";position:absolute;top:0;bottom:0;left:56px;width:1px;background:var(--red);opacity:.18}
+.w-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:18px;font-family:Inter,sans-serif}
+.w-head h3{margin:8px 0 0;font-size:1.25rem}
+.w-ip{font-family:var(--mono);color:var(--primary-dark);background:var(--primary-soft);padding:2px 8px;border-radius:6px}
+.w-class{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px 40px;color:var(--muted)}
+.w-class svg{width:46px;height:26px;color:var(--amber);flex:none}
+.w-class b{color:var(--ink)}
+.w-pill{background:var(--amber);color:var(--on-accent);font-weight:700;padding:2px 9px;border-radius:999px}
+:root:not([data-theme="dark"]) .w-pill{color:#fff}
+.w-formulas{display:grid;grid-template-columns:minmax(220px,auto) 1fr;gap:6px 22px;align-items:center;margin-bottom:6px}
+.w-lbl{color:var(--muted)}
+.w-eq{color:var(--ink)}
+.w-eq b,.w-big{color:var(--teal);font-size:1.05rem}
+.w-branch{grid-column:2;display:flex;align-items:flex-start;gap:8px;margin:0 0 8px 70px;color:var(--muted);font-size:.85rem}
+.w-branch svg{width:34px;height:40px;color:var(--primary);flex:none}
+.w-branch div span{display:block}
+.w-split{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:18px 0;align-items:start}
+.w-tip{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:var(--amber-soft);color:var(--note-ink);font-family:Inter,sans-serif;font-size:.88rem;border:1px dashed var(--note-b)}
+.w-ipm{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;border-top:2px dashed var(--line);padding-top:10px}
+.w-ipm span:nth-child(odd){color:var(--muted);font-weight:600}
+.w-ipm mark{background:var(--amber-soft);color:var(--amber);font-weight:700;padding:0 4px;border-radius:4px}
+.w-sub{color:var(--muted);border-bottom:2px dashed var(--line);padding-bottom:4px;margin-bottom:10px;font-family:Inter,sans-serif;font-size:.85rem;font-weight:600}
+.w-bin{display:flex;align-items:center;gap:3px;margin:5px 0;flex-wrap:wrap}
+.w-bin .lb{width:66px;color:var(--muted);font-size:.78rem}
+.wb{width:22px;height:26px;display:grid;place-items:center;border-radius:5px;background:var(--panel-2);border:1px solid var(--line);font-weight:700}
+.wb.one{background:var(--primary-soft);color:var(--primary-dark)}
+.wb.res{background:var(--teal-soft);color:var(--teal)}
+.wb.sp{width:6px;border:0;background:none}
+.w-eqv{margin-left:8px;font-weight:700}
+.w-rule{height:2px;background:var(--ink);opacity:.5;margin:6px 0 6px 69px;width:200px;transform-origin:left}
+.w-tagsalto{margin-left:10px;font-size:.8rem;background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber);padding:2px 8px;border-radius:999px;font-weight:600}
+.w-results{display:grid;grid-template-columns:auto auto auto 1fr;gap:0 18px;align-items:center;border-top:2px dashed var(--line);padding-top:12px}
+.w-results .r{padding:6px 0}
+.w-results .rl{color:var(--muted);font-weight:600}
+.w-results .rv{color:var(--ink);font-weight:700}
+.w-results .rv.n{color:var(--primary-dark)}
+.w-results .ra{color:var(--red);font-size:.82rem}
+.w-rail{grid-column:4;grid-row:1 / 6;align-self:stretch;position:relative;margin-left:30px;min-height:150px}
+.w-rail::before{content:"";position:absolute;left:0;top:14px;bottom:16px;border-left:2px dashed var(--amber);transform-origin:top}
+.w-rail .t,.w-rail .b{position:absolute;left:12px;font-size:.82rem;white-space:nowrap}
+.w-rail .t{top:2px;color:var(--amber);font-weight:600}
+.w-rail .b{bottom:2px;color:var(--teal);font-weight:700;font-size:.95rem}
+.w-rail .t::before,.w-rail .b::before{content:"";position:absolute;left:-12px;top:50%;width:10px;border-top:2px dashed var(--amber)}
+.worked.play .w-a{animation:fadeUp .55s both;animation-delay:var(--d,0s)}
+.worked.play .wb{animation:pop .3s both;animation-delay:var(--d,0s)}
+.worked.play .w-rule{animation:grow .5s both;animation-delay:var(--d,0s)}
+.worked.play .w-rail::before{animation:railGrow 1s both;animation-delay:var(--d,0s)}
+.worked.play .w-branch path,.worked.play .w-class path{stroke-dasharray:120;animation:draw 1s both;animation-delay:var(--d,0s)}
+.wplay.play .w-a{animation:fadeUp .55s both;animation-delay:var(--d,0s)}
+.wplay.play .wb{animation:pop .3s both;animation-delay:var(--d,0s)}
+.wplay.play .w-rule{animation:grow .5s both;animation-delay:var(--d,0s)}
+.wplay.play .w-rail::before{animation:railGrow 1s both;animation-delay:var(--d,0s)}
+/* Desarrollo VLSM */
+.vw-given{margin:0 0 6px 40px;padding-left:20px;display:grid;gap:3px}
+.vw-given b{color:var(--teal)}
+.vw-given i,.vw-srow i,.vw-tab i,.vw-sub-h i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:middle;flex:none}
+.vw-h{display:flex;align-items:center;gap:10px;margin:22px 0 12px;padding-top:14px;border-top:2px dashed var(--line);font-family:Inter,sans-serif;font-weight:700;color:var(--ink)}
+.vw-h>span{width:26px;height:26px;border-radius:50%;background:var(--amber);color:#fff;display:grid;place-items:center;font-size:.85rem;flex:none}
+.vw-sort{display:grid;gap:5px;margin-left:40px;max-width:600px}
+.vw-srow{display:flex;align-items:center;gap:8px}
+.vw-rank{width:34px;color:var(--amber);font-weight:700}
+.vw-srow .dots{flex:1;min-width:20px;border-bottom:2px dotted var(--line);transform:translateY(-3px)}
+.vw-srow .ar{color:var(--primary)}
+.vw-srow b{color:var(--teal);min-width:34px;text-align:right}
+.vw-moved{font-family:Inter,sans-serif;font-size:.72rem;color:var(--amber);background:var(--amber-soft);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.vw-moved.ok{color:var(--muted);background:var(--panel-2)}
+.vw-netline{display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;padding:10px 14px;border-radius:10px;background:var(--primary-soft);color:var(--primary-dark)}
+.vw-netline span{color:var(--muted);font-size:.82rem;font-family:Inter,sans-serif}
+.vw-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 16px;font-family:Inter,sans-serif;position:relative;z-index:1}
+.vw-tab{display:inline-flex;align-items:center;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:6px 12px;font:600 .8rem Inter,sans-serif;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
+.vw-tab:hover{border-color:var(--primary)}
+.vw-tab.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.vw-body{position:relative;z-index:1}
+.vw-sub-h{display:flex;align-items:center;font-family:Inter,sans-serif;font-weight:700;font-size:1.08rem;margin-bottom:12px}
+.vw-from{display:grid;grid-template-columns:auto auto 1fr;gap:4px 12px;align-items:baseline;margin-bottom:12px}
+.vw-from>span:nth-child(3n+1){color:var(--muted);font-weight:600}
+.vw-from .muted{font-size:.8rem;font-family:Inter,sans-serif}
+.vw-from .arrow{color:var(--red);font-weight:700}
+.w-ok{color:var(--teal);font-size:.85rem}
+.w-no{color:var(--red);font-size:.85rem}
+.vw-nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding-top:12px;border-top:2px dashed var(--line);font-family:Inter,sans-serif;position:relative;z-index:1}
+.vw-nav .btn:disabled{opacity:.4;cursor:default}
+@keyframes railGrow{from{transform:scaleY(0)}to{transform:none}}
+@keyframes draw{from{stroke-dashoffset:120}to{stroke-dashoffset:0}}
+@media (max-width:760px){
+  .worked{padding:20px 16px;font-size:.82rem}.worked::after{display:none}
+  .w-formulas,.w-split{grid-template-columns:1fr}.w-branch{grid-column:1;margin-left:10px}.w-class{margin-left:0}
+  .w-results{grid-template-columns:auto auto auto}.w-rail{display:none}
+  .wb{width:18px;height:22px}.w-bin .lb{width:100%}.w-rule{margin-left:0}
+  .vw-given,.vw-sort{margin-left:0}.vw-from{grid-template-columns:auto 1fr}.vw-from>span:nth-child(3n){grid-column:1 / -1}
+  .vw-srow{flex-wrap:wrap;gap:4px 8px}.vw-srow .dots{display:none}.vw-srow .nm{flex:1}
+}
+
+footer{padding:40px 0 50px;text-align:center;color:var(--muted);font-size:.88rem}
+
+@media (max-width:960px){
+  .hero-grid,.sim,.prac,.review,.g2{grid-template-columns:1fr}
+  .g3,.g4{grid-template-columns:1fr 1fr}
+  .sim-form{position:static}
+  .floating{display:none}
+}
+@media (max-width:720px){
+  .nav-links{display:none;position:absolute;top:100%;left:0;right:0;background:var(--panel);flex-direction:column;padding:10px 16px;border-bottom:1px solid var(--line)}
+  .nav-links.open{display:flex}
+  .menu-btn{display:block;margin-left:8px}
+  .theme-btn{margin-left:auto}
+  .g3,.g4{grid-template-columns:1fr}
+  .wrap{padding:0 16px}
+  h2{font-size:1.5rem}
+  .bit{width:17px;height:24px;font-size:.72rem}
+  .bit-gap{width:4px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}.bit,.chip,.c,.blk,.term .row{opacity:1!important}}
+</style>
+</head>
+<body>
+
+<!-- ICONOS -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-router" viewBox="0 0 64 64"><ellipse cx="32" cy="40" rx="26" ry="10" fill="currentColor" opacity=".18"/><path d="M6 28v12c0 5.5 11.6 10 26 10s26-4.5 26-10V28" fill="none" stroke="currentColor" stroke-width="2.5"/><ellipse cx="32" cy="28" rx="26" ry="10" style="fill:var(--panel)" stroke="currentColor" stroke-width="2.5"/><path d="M22 24l6 3-6 3M42 24l-6 3 6 3M29 21l3-3 3 3M29 33l3 3 3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-switch" viewBox="0 0 64 64"><rect x="4" y="22" width="56" height="22" rx="4" style="fill:var(--panel)" stroke="currentColor" stroke-width="2.5"/><g fill="currentColor"><rect x="10" y="30" width="6" height="6" rx="1"/><rect x="19" y="30" width="6" height="6" rx="1"/><rect x="28" y="30" width="6" height="6" rx="1"/><rect x="37" y="30" width="6" height="6" rx="1"/></g><circle cx="51" cy="33" r="2.5" fill="#357f6e"/></symbol>
+    <symbol id="i-pc" viewBox="0 0 64 64"><rect x="10" y="12" width="44" height="30" rx="3" style="fill:var(--panel)" stroke="currentColor" stroke-width="2.5"/><rect x="15" y="17" width="34" height="20" rx="1" fill="currentColor" opacity=".15"/><path d="M26 42l-2 8h16l-2-8M20 52h24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-server" viewBox="0 0 64 64"><g style="fill:var(--panel)" stroke="currentColor" stroke-width="2.5"><rect x="14" y="8" width="36" height="14" rx="3"/><rect x="14" y="25" width="36" height="14" rx="3"/><rect x="14" y="42" width="36" height="14" rx="3"/></g><g fill="currentColor"><circle cx="21" cy="15" r="2"/><circle cx="21" cy="32" r="2"/><circle cx="21" cy="49" r="2"/></g><path d="M30 15h14M30 32h14M30 49h14" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-laptop" viewBox="0 0 64 64"><rect x="14" y="14" width="36" height="24" rx="2" style="fill:var(--panel)" stroke="currentColor" stroke-width="2.5"/><rect x="18" y="18" width="28" height="16" rx="1" fill="currentColor" opacity=".15"/><path d="M7 44h50l-4 7H11z" style="fill:var(--panel)" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M27 47h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-printer" viewBox="0 0 64 64"><rect x="20" y="9" width="24" height="15" rx="1" style="fill:var(--panel)" stroke="currentColor" stroke-width="2.5"/><rect x="9" y="24" width="46" height="20" rx="4" style="fill:var(--panel)" stroke="currentColor" stroke-width="2.5"/><rect x="19" y="38" width="26" height="16" rx="1" style="fill:var(--panel)" stroke="currentColor" stroke-width="2.5"/><path d="M24 44h16M24 49h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="47" cy="31" r="2.5" fill="currentColor"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 64 64"><path d="M18 46h30a10 10 0 0 0 0-20 14 14 0 0 0-27-3 11 11 0 0 0-3 23z" style="fill:var(--panel)" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M8 7h7M8 11h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-steps" viewBox="0 0 24 24"><path d="M4 20h5v-5h5v-5h5V5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="19" cy="5" r="2" fill="currentColor"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></g></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5M3 17.5l9 5 9-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-5L16 4l4 4L9 19zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-table" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M9 4v16"/></g></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-wand" viewBox="0 0 24 24"><path d="M4 20L16 8M14 4v3M19 9h3M18 4l-2 2M12 2l.5 1.5M20 13l1 .5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-dice" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><g fill="currentColor"><circle cx="8" cy="8" r="1.5"/><circle cx="16" cy="16" r="1.5"/><circle cx="12" cy="12" r="1.5"/></g></symbol>
+    <symbol id="i-network" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v5M5 17v-5h14v5"/></g></symbol>
+  </defs>
+</svg>
+
+<!-- FONDO LABORATORIO -->
+<div class="lab-bg" aria-hidden="true">
+  <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+    <g>
+      <path id="c1" class="cable solid" d="M800 130 L800 250"/>
+      <path id="c2" class="cable solid" d="M800 250 L420 340"/>
+      <path id="c3" class="cable solid" d="M800 250 L1180 340"/>
+      <path id="c4" class="cable" d="M420 340 L240 560"/>
+      <path id="c5" class="cable" d="M420 340 L600 560"/>
+      <path id="c6" class="cable" d="M1180 340 L1040 560"/>
+      <path id="c7" class="cable" d="M1180 340 L1390 580"/>
+      <path id="c8" class="cable solid" d="M1180 340 L1500 300"/>
+      <path class="cable" d="M240 560 L140 800 M240 560 L320 820 M600 560 L540 800 M600 560 L700 830 M1040 560 L980 800 M1040 560 L1130 820 M1390 580 L1320 810 M1390 580 L1480 800"/>
+      <path id="c9" class="cable" d="M240 560 L320 820"/>
+      <path id="c10" class="cable" d="M1040 560 L1130 820"/>
+      <path class="cable solid" d="M420 340 L1180 340" stroke-dasharray="2 8"/>
+    </g>
+    <g class="node">
+      <use href="#i-cloud" x="760" y="70" width="80" height="80"/>
+      <use href="#i-router" x="768" y="218" width="64" height="64"/>
+      <use href="#i-router" x="388" y="308" width="64" height="64"/>
+      <use href="#i-router" x="1148" y="308" width="64" height="64"/>
+      <use href="#i-server" x="1472" y="268" width="60" height="60"/>
+      <use href="#i-switch" x="208" y="528" width="64" height="64"/>
+      <use href="#i-switch" x="568" y="528" width="64" height="64"/>
+      <use href="#i-switch" x="1008" y="528" width="64" height="64"/>
+      <use href="#i-switch" x="1358" y="548" width="64" height="64"/>
+      <use href="#i-pc" x="114" y="774" width="52" height="52"/><use href="#i-pc" x="294" y="794" width="52" height="52"/>
+      <use href="#i-pc" x="514" y="774" width="52" height="52"/><use href="#i-pc" x="674" y="804" width="52" height="52"/>
+      <use href="#i-pc" x="954" y="774" width="52" height="52"/><use href="#i-pc" x="1104" y="794" width="52" height="52"/>
+      <use href="#i-pc" x="1294" y="784" width="52" height="52"/><use href="#i-pc" x="1454" y="774" width="52" height="52"/>
+    </g>
+    <g>
+      <text class="lbl" x="812" y="200">ISP · 200.10.5.0/30</text>
+      <text class="lbl" x="840" y="258">R1 Gi0/0</text>
+      <text class="lbl" x="300" y="300">R2 · 10.0.0.1/30</text>
+      <text class="lbl" x="1220" y="300">R3 · 10.0.0.5/30</text>
+      <text class="lbl" x="130" y="530">VLAN 10 · 192.168.10.0/26</text>
+      <text class="lbl" x="560" y="520">VLAN 20 · 192.168.10.64/27</text>
+      <text class="lbl" x="940" y="520">VLAN 30 · 172.16.4.0/24</text>
+      <text class="lbl" x="1320" y="540">VLAN 40 · /28</text>
+      <text class="lbl" x="1450" y="360">SRV 172.16.9.10</text>
+      <text class="lbl" x="60" y="880">255.255.255.192</text>
+      <text class="lbl" x="1360" y="880">salto = 256 − 240 = 16</text>
+    </g>
+    <g>
+      <circle r="5" class="pkt"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#c1"/></animateMotion></circle>
+      <circle r="5" class="pkt b"><animateMotion dur="4s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#c2"/></animateMotion></circle>
+      <circle r="5" class="pkt"><animateMotion dur="4.5s" repeatCount="indefinite" begin="1s"><mpath href="#c3"/></animateMotion></circle>
+      <circle r="5" class="pkt b"><animateMotion dur="3.5s" repeatCount="indefinite"><mpath href="#c4"/></animateMotion></circle>
+      <circle r="5" class="pkt"><animateMotion dur="3s" repeatCount="indefinite" begin=".5s"><mpath href="#c5"/></animateMotion></circle>
+      <circle r="5" class="pkt b"><animateMotion dur="3.2s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#c6"/></animateMotion></circle>
+      <circle r="5" class="pkt"><animateMotion dur="4s" repeatCount="indefinite"><mpath href="#c7"/></animateMotion></circle>
+      <circle r="5" class="pkt b"><animateMotion dur="2.5s" repeatCount="indefinite"><mpath href="#c8"/></animateMotion></circle>
+      <circle r="4" class="pkt"><animateMotion dur="2.8s" repeatCount="indefinite"><mpath href="#c9"/></animateMotion></circle>
+      <circle r="4" class="pkt b"><animateMotion dur="3.1s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#c10"/></animateMotion></circle>
+    </g>
+  </svg>
+</div>
+
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="#inicio"><svg><use href="#i-network"/></svg>SubnetLab</a>
+    <button class="menu-btn" id="menuBtn" aria-label="Menú">☰</button>
+    <nav class="nav-links" id="navLinks">
+      <a href="#fundamentos">Fundamentos</a>
+      <a href="#guia">Guía paso a paso</a>
+      <a href="#fijo">Subneteo fijo</a>
+      <a href="#vlsm">VLSM</a>
+      <a href="#practica">Práctica</a>
+      <a href="#referencia">Referencia</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Cambiar modo claro/oscuro" title="Modo claro / oscuro">
+      <svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <svg class="moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+<!-- HERO -->
+<section class="hero" id="inicio">
+  <div class="wrap hero-grid">
+    <div class="reveal">
+      <span class="tag teal">Laboratorio de redes · IPv4</span>
+      <h1>Aprende <span>subneteo</span> paso a paso, sin memorizar a ciegas.</h1>
+      <p>Guía visual, simuladores de subneteo fijo y VLSM, un modo de práctica con pistas y tablas de referencia rápida. Todo en una sola página.</p>
+      <div class="btns">
+        <a class="btn" href="#guia"><svg><use href="#i-play"/></svg>Empezar la guía</a>
+        <a class="btn ghost" href="#practica"><svg><use href="#i-pencil"/></svg>Practicar</a>
+      </div>
+      <div class="stats">
+        <div><b>32</b>bits por dirección</div>
+        <div><b>4</b>octetos de 8 bits</div>
+        <div><b>2<sup>n</sup></b>la clave de todo</div>
+      </div>
+    </div>
+    <div class="hero-card reveal">
+      <div class="floating f1"><svg><use href="#i-router"/></svg><div><b>Salto</b><br><span class="mono">256 − 240 = 16</span></div></div>
+      <div class="term" id="heroTerm"></div>
+      <div class="floating f2"><svg><use href="#i-switch"/></svg><div><b>Hosts</b><br><span class="mono">2⁴ − 2 = 14</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FUNDAMENTOS -->
+<section id="fundamentos">
+  <div class="wrap">
+    <div class="sec-head reveal"><div class="sec-icon"><svg><use href="#i-book"/></svg></div><h2>Fundamentos</h2></div>
+    <p class="lead reveal">Antes de calcular, conviene tener claros cuatro conceptos. Con ellos se resuelve cualquier ejercicio.</p>
+    <div class="grid g4">
+      <div class="card concept reveal"><svg class="ic"><use href="#i-pc"/></svg><h3>Dirección IP</h3><p>Número de 32 bits dividido en 4 octetos (0–255). Tiene una parte de <b>red</b> y una de <b>host</b>.</p><div class="formula">172.163.22.55</div></div>
+      <div class="card concept reveal"><svg class="ic"><use href="#i-layers"/></svg><h3>Máscara</h3><p>Indica qué bits son de red (1) y cuáles de host (0). Los 1 siempre van seguidos, a la izquierda.</p><div class="formula">255.255.255.240</div></div>
+      <div class="card concept reveal"><svg class="ic"><use href="#i-switch"/></svg><h3>Prefijo CIDR</h3><p>La misma máscara escrita como cantidad de bits en 1. Cada <b>255 = 8 bits</b>.</p><div class="formula">/28 = 8+8+8+4</div></div>
+      <div class="card concept reveal"><svg class="ic"><use href="#i-router"/></svg><h3>Salto (bloque)</h3><p>Tamaño de cada subred en el octeto donde la máscara no es 255 ni 0 (octeto interesante).</p><div class="formula">256 − 240 = <b>16</b></div></div>
+    </div>
+    <div class="grid g3" style="margin-top:18px">
+      <div class="card reveal"><h3>Subredes</h3><div class="formula"><b>2<sup>n</sup></b> · n = bits prestados<br>n = prefijo nuevo − prefijo de la clase</div></div>
+      <div class="card reveal"><h3>Hosts utilizables</h3><div class="formula"><b>2<sup>h</sup> − 2</b> · h = 32 − prefijo<br>−1 red, −1 broadcast</div></div>
+      <div class="card reveal"><h3>Dirección de red</h3><div class="formula"><b>IP AND Máscara</b><br>o el múltiplo del salto ≤ octeto</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- GUIA -->
+<section id="guia">
+  <div class="wrap">
+    <div class="sec-head reveal"><div class="sec-icon"><svg><use href="#i-steps"/></svg></div><h2>Guía paso a paso</h2></div>
+    <p class="lead reveal">Basada en el ejemplo <span class="mono">172.163.22.55 /28</span>. Primero, el desarrollo completo en una sola hoja; después, la guía animada paso a paso. Si cambias la IP, ambos se recalculan.</p>
+    <div class="worked card reveal" id="worked"></div>
+
+    <div class="card reveal">
+      <div class="inline-form">
+        <div class="field"><label>Dirección IP</label><input id="gIp" value="172.163.22.55" size="16"></div>
+        <div class="field"><label>Prefijo</label><input id="gP" type="number" min="8" max="30" value="28" style="width:80px"></div>
+        <button class="btn" id="gLoad"><svg><use href="#i-play"/></svg>Cargar ejemplo</button>
+        <span class="err" id="gErr"></span>
+      </div>
+      <div class="steps" id="gSteps"></div>
+      <div class="guide-ctrl">
+        <button class="btn ghost sm" id="gPrev">← Anterior</button>
+        <button class="btn sm" id="gNext">Siguiente paso →</button>
+        <button class="btn ghost sm" id="gAll">Mostrar todo</button>
+        <div class="progress"><i id="gBar"></i></div>
+        <span class="small muted" id="gCount"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FIJO -->
+<section id="fijo">
+  <div class="wrap">
+    <div class="sec-head reveal"><div class="sec-icon"><svg><use href="#i-grid"/></svg></div><h2>Simulador · Subneteo fijo (FLSM)</h2></div>
+    <p class="lead reveal">Todas las subredes tienen el mismo tamaño. Indica la red y cuántas subredes o hosts necesitas: el simulador calcula los bits prestados, la nueva máscara y la tabla completa.</p>
+    <div class="sim reveal">
+      <div class="card sim-form">
+        <div class="field"><label>Red o IP</label><input id="fIp" value="192.168.10.0"></div>
+        <div class="field"><label>Prefijo original</label><input id="fP" type="number" min="1" max="30" value="24"></div>
+        <div class="field"><label>Criterio</label>
+          <select id="fMode"><option value="subs">Necesito N subredes</option><option value="hosts">Necesito H hosts por subred</option><option value="pref">Nuevo prefijo directo</option></select></div>
+        <div class="field"><label id="fValLbl">Cantidad de subredes</label><input id="fVal" type="number" min="1" value="6"></div>
+        <button class="btn teal" id="fRun"><svg><use href="#i-play"/></svg>Calcular subredes</button>
+        <div class="small muted">Ejemplos: <a href="#" data-fx="192.168.10.0|24|subs|6">C · 6 subredes</a> · <a href="#" data-fx="172.163.22.55|16|pref|28">Tu ejemplo /28</a> · <a href="#" data-fx="10.0.0.0|8|hosts|500">A · 500 hosts</a></div>
+        <div class="err" id="fErr"></div>
+      </div>
+      <div class="sim-out" id="fOut"></div>
+    </div>
+    <div id="fTopoCard" style="margin-top:18px"></div>
+  </div>
+</section>
+
+<!-- VLSM -->
+<section id="vlsm">
+  <div class="wrap">
+    <div class="sec-head reveal"><div class="sec-icon"><svg><use href="#i-layers"/></svg></div><h2>Simulador · VLSM</h2></div>
+    <p class="lead reveal">Máscara de longitud variable: cada subred recibe solo el tamaño que necesita. Método: <b>ordenar de mayor a menor</b>, buscar la potencia de 2 que alcance (hosts + 2) y asignar bloques consecutivos.</p>
+    <div class="sim reveal">
+      <div class="card sim-form">
+        <div class="field"><label>Red base (CIDR)</label><input id="vBase" value="192.168.10.0/24"></div>
+        <div class="field"><label>Subredes: nombre · hosts · dispositivos</label>
+          <div class="dev-legend"><span><svg><use href="#i-pc"/></svg>PC</span><span><svg><use href="#i-laptop"/></svg>Laptop</span><span><svg><use href="#i-server"/></svg>Servidor</span><span><svg><use href="#i-printer"/></svg>Impresora</span></div></div>
+        <div class="vlsm-rows" id="vRows"></div>
+        <div class="btns" style="margin-top:0">
+          <button class="btn ghost sm" id="vAdd">+ Agregar</button>
+          <button class="btn ghost sm" id="vEx">Ejemplo</button>
+        </div>
+        <button class="btn teal" id="vRun"><svg><use href="#i-play"/></svg>Calcular VLSM</button>
+        <div class="err" id="vErr"></div>
+      </div>
+      <div class="sim-out" id="vOut"></div>
+    </div>
+    <div class="worked card" id="vWorked" style="margin-top:18px" hidden></div>
+    <div id="vTopoCard" style="margin-top:18px"></div>
+  </div>
+</section>
+
+<!-- PRACTICA -->
+<section id="practica">
+  <div class="wrap">
+    <div class="sec-head reveal"><div class="sec-icon"><svg><use href="#i-pencil"/></svg></div><h2>Práctica libre</h2></div>
+    <p class="lead reveal">Resuélvelo tú y pulsa <b>Verificar</b>: si algo está mal te damos una pista (cada intento da una pista más concreta). Si te atascas, usa <b>Autocompletar paso a paso</b> y el sistema rellena un campo a la vez explicando el porqué.</p>
+    <div class="card reveal">
+      <div class="mode-bar">
+        <span class="small muted" style="font-weight:600">Tipo de subneteo:</span>
+        <div class="seg" role="tablist">
+          <button role="tab" class="on" data-mode="fija" aria-selected="true"><svg><use href="#i-grid"/></svg>Fija (FLSM)</button>
+          <button role="tab" data-mode="vlsm" aria-selected="false"><svg><use href="#i-layers"/></svg>VLSM</button>
+        </div>
+        <span class="small muted" id="modeDesc">Todas las subredes del mismo tamaño: analiza una IP con su prefijo.</span>
+      </div>
+      <div id="pmFija">
+      <div class="prac-top">
+        <div>
+          <div class="small muted">Ejercicio actual</div>
+          <div class="problem" id="pProblem">—</div>
+          <div class="small muted" id="pClass"></div>
+        </div>
+        <div class="inline-form">
+          <div class="field"><label>IP propia</label><input id="pIp" placeholder="192.168.1.130" size="15"></div>
+          <div class="field"><label>Prefijo</label><input id="pP" type="number" min="1" max="30" placeholder="26" style="width:76px"></div>
+          <button class="btn ghost" id="pLoad">Usar mi IP</button>
+          <button class="btn ghost" id="pRand"><svg><use href="#i-dice"/></svg>Aleatorio</button>
+        </div>
+      </div>
+      <div class="err" id="pErr"></div>
+      <div class="prac">
+        <div>
+          <div class="pfields" id="pFields"></div>
+          <div class="score"><b id="pScore">0 / 0</b><div class="progress"><i id="pBar"></i></div></div>
+          <div class="btns" style="margin-top:0">
+            <button class="btn" id="pCheck"><svg><use href="#i-check"/></svg>Verificar</button>
+            <button class="btn amber" id="pStep"><svg><use href="#i-wand"/></svg>Autocompletar paso a paso</button>
+            <button class="btn ghost" id="pSolve">Resolver todo</button>
+            <button class="btn ghost" id="pClear">Limpiar</button>
+          </div>
+        </div>
+        <div class="card log" style="background:var(--panel-2)">
+          <h3 style="display:flex;gap:8px;align-items:center"><svg style="width:22px;height:22px;color:var(--amber)"><use href="#i-bulb"/></svg>Explicación</h3>
+          <div class="small muted" id="pLogEmpty">Aquí aparecerán las explicaciones de cada paso autocompletado.</div>
+          <ol id="pLog"></ol>
+        </div>
+      </div>
+      </div>
+
+      <div id="pmVlsm" hidden>
+        <div class="prac-top">
+          <div style="min-width:0">
+            <div class="small muted">Ejercicio actual · red base</div>
+            <div class="problem" id="qProblem">—</div>
+            <div class="req-chips" id="qReqs"></div>
+          </div>
+          <div class="inline-form">
+            <div class="field"><label>Red base propia</label><input id="qBase" placeholder="192.168.20.0/24" size="16"></div>
+            <div class="field"><label>Áreas (nombre hosts, …)</label><input id="qReqIn" placeholder="Ventas 50, Admin 25, Soporte 12" size="28"></div>
+            <button class="btn ghost" id="qLoad">Usar mis datos</button>
+            <button class="btn ghost" id="qRand"><svg><use href="#i-dice"/></svg>Aleatorio</button>
+          </div>
+        </div>
+        <div class="err" id="qErr"></div>
+        <div class="note info" style="margin:14px 0">Las áreas aparecen <b>desordenadas</b>. Recuerda el método: ordena de <b>mayor a menor</b> por hosts, calcula el bloque (hosts + 2 → potencia de 2) y asigna las redes de forma consecutiva desde la red base.</div>
+        <div class="tbl-wrap"><table class="qtbl"><thead><tr><th>Área</th><th>Hosts</th><th>Prefijo</th><th>Máscara</th><th>Red</th><th>Primer host</th><th>Último host</th><th>Broadcast</th></tr></thead><tbody id="qBody"></tbody></table></div>
+        <div class="q-hint" id="qHint"></div>
+        <div class="score"><b id="qScore">0 / 0</b><div class="progress"><i id="qBar"></i></div></div>
+        <div class="btns" style="margin-top:0">
+          <button class="btn" id="qCheck"><svg><use href="#i-check"/></svg>Verificar</button>
+          <button class="btn amber" id="qStep"><svg><use href="#i-wand"/></svg>Autocompletar paso a paso</button>
+          <button class="btn ghost" id="qSolve">Resolver todo</button>
+          <button class="btn ghost" id="qClear">Limpiar</button>
+        </div>
+        <div class="card log" style="background:var(--panel-2);margin-top:16px">
+          <h3 style="display:flex;gap:8px;align-items:center"><svg style="width:22px;height:22px;color:var(--amber)"><use href="#i-bulb"/></svg>Explicación</h3>
+          <div class="small muted" id="qLogEmpty">Aquí aparecerán las explicaciones de cada paso autocompletado.</div>
+          <ol id="qLog"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REFERENCIA -->
+<section id="referencia">
+  <div class="wrap">
+    <div class="sec-head reveal"><div class="sec-icon"><svg><use href="#i-table"/></svg></div><h2>Tablas de referencia rápida</h2></div>
+    <p class="lead reveal">Para tener a mano durante el examen o el laboratorio.</p>
+
+    <div class="grid g2">
+      <div class="card reveal">
+        <h3>Binario → valor decimal (octeto de máscara)</h3>
+        <p class="small muted" style="margin-top:0">Prefijo y hosts calculados cuando ese valor está en el 4.º octeto (sumar 8 por cada octeto a la izquierda: /16 → /24 → …).</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Bits en 1</th><th>Binario</th><th>Decimal</th><th>Salto</th><th>Prefijo</th><th>Hosts</th></tr></thead>
+            <tbody id="binTbl"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card reveal">
+        <h3>Conversor interactivo de octeto</h3>
+        <p class="small muted" style="margin-top:0">Pulsa cada bit para encenderlo. El valor es la suma de las posiciones activas.</p>
+        <div class="octet-conv" id="octConv"></div>
+        <div class="formula" id="octSum">0 = 0</div>
+        <div class="note info" style="margin-top:14px">Truco: una máscara válida siempre tiene los 1 juntos a la izquierda. Por eso solo existen 9 valores posibles por octeto: 0, 128, 192, 224, 240, 248, 252, 254, 255.</div>
+      </div>
+    </div>
+
+    <div class="card reveal" style="margin-top:18px">
+      <h3>Potencias de 2 (2<sup>0</sup> a 2<sup>15</sup>)</h3>
+      <p class="small muted" style="margin-top:0">Debajo: hosts utilizables si ese exponente es la cantidad de bits de host (2<sup>h</sup> − 2).</p>
+      <div class="pow" id="powGrid"></div>
+    </div>
+
+    <div class="card reveal" style="margin-top:18px">
+      <h3>Clases de direcciones IPv4</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Clase</th><th>1.er octeto</th><th>Rango</th><th>Bits iniciales</th><th>Prefijo</th><th>Máscara de subred</th><th>Hosts por red</th><th>Uso</th></tr></thead>
+          <tbody>
+            <tr><td><span class="cls-badge" style="background:#2c6e9b">A</span></td><td class="mono">1 – 126</td><td class="mono">1.0.0.0 – 126.255.255.255</td><td class="mono">0xxx xxxx</td><td class="mono">/8</td><td class="mono">255.0.0.0</td><td class="mono">16 777 214</td><td>Redes muy grandes</td></tr>
+            <tr><td><span class="cls-badge" style="background:#357f6e">B</span></td><td class="mono">128 – 191</td><td class="mono">128.0.0.0 – 191.255.255.255</td><td class="mono">10xx xxxx</td><td class="mono">/16</td><td class="mono">255.255.0.0</td><td class="mono">65 534</td><td>Redes medianas</td></tr>
+            <tr><td><span class="cls-badge" style="background:#b7792a">C</span></td><td class="mono">192 – 223</td><td class="mono">192.0.0.0 – 223.255.255.255</td><td class="mono">110x xxxx</td><td class="mono">/24</td><td class="mono">255.255.255.0</td><td class="mono">254</td><td>Redes pequeñas</td></tr>
+            <tr><td><span class="cls-badge" style="background:#7a6a9b">D</span></td><td class="mono">224 – 239</td><td class="mono">224.0.0.0 – 239.255.255.255</td><td class="mono">1110 xxxx</td><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>Multicast</td></tr>
+            <tr><td><span class="cls-badge" style="background:#7d8792">E</span></td><td class="mono">240 – 255</td><td class="mono">240.0.0.0 – 255.255.255.255</td><td class="mono">1111 xxxx</td><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>Experimental</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid g2" style="margin-top:14px">
+        <div class="note info"><b>Rangos privados (RFC 1918)</b><br><span class="mono">A: 10.0.0.0 – 10.255.255.255 (/8)<br>B: 172.16.0.0 – 172.31.255.255 (/12)<br>C: 192.168.0.0 – 192.168.255.255 (/16)</span></div>
+        <div class="note"><b>Especiales</b><br><span class="mono">0.x.x.x</span> red “esta red” · <span class="mono">127.x.x.x</span> loopback (por eso la clase A termina en 126) · <span class="mono">169.254.x.x</span> APIPA · <span class="mono">255.255.255.255</span> broadcast limitado.</div>
+      </div>
+    </div>
+
+    <div class="card reveal" style="margin-top:18px">
+      <h3>Prefijos más usados</h3>
+      <div class="tbl-wrap"><table><thead><tr><th>Prefijo</th><th>Máscara</th><th>Salto</th><th>Direcciones</th><th>Hosts utilizables</th></tr></thead><tbody id="cidrTbl"></tbody></table></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">SubnetLab · Material educativo de subneteo IPv4 · Fórmulas: 2<sup>n</sup> subredes · 2<sup>h</sup> − 2 hosts · salto = 256 − máscara</div>
+</footer>
+
+<script>
+/* ================= UTILIDADES IP ================= */
+const $ = s => document.querySelector(s);
+const fmt = n => n.toLocaleString('es-ES');
+function parseIP(s){
+  const m = String(s).trim().match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if(!m) return null;
+  const o = m.slice(1).map(Number);
+  if(o.some(x => x > 255)) return null;
+  return o[0]*16777216 + o[1]*65536 + o[2]*256 + o[3];
+}
+const oct = n => [Math.floor(n/16777216)%256, Math.floor(n/65536)%256, Math.floor(n/256)%256, n%256];
+const ipStr = n => oct(n).join('.');
+const maskInt = p => p === 0 ? 0 : (0xFFFFFFFF << (32 - p)) >>> 0;
+const bin8 = n => n.toString(2).padStart(8,'0');
+const bin8s = n => { const b = bin8(n); return b.slice(0,4)+' '+b.slice(4); };
+function classOf(ip){
+  const f = oct(ip)[0];
+  if(f === 0) return {c:'—', def:null, note:'Reservada (esta red)'};
+  if(f <= 126) return {c:'A', def:8, mask:'255.0.0.0'};
+  if(f === 127) return {c:'A*', def:null, note:'Loopback (127.x.x.x)'};
+  if(f <= 191) return {c:'B', def:16, mask:'255.255.0.0'};
+  if(f <= 223) return {c:'C', def:24, mask:'255.255.255.0'};
+  if(f <= 239) return {c:'D', def:null, note:'Multicast'};
+  return {c:'E', def:null, note:'Experimental'};
+}
+function info(ip, p){
+  const mask = maskInt(p);
+  const net = (ip & mask) >>> 0;
+  const size = 2 ** (32 - p);
+  const bc = net + size - 1;
+  const idx = Math.min(3, Math.ceil(p/8) - 1);
+  const mo = oct(mask);
+  const salto = 256 - mo[idx];
+  return {ip, p, mask, net, bc, size, first: net+1, last: bc-1, next: bc+1 <= 4294967295 ? bc+1 : null,
+          hosts: p >= 31 ? (p===31?2:1) : size - 2, idx, salto, mo, cls: classOf(ip)};
+}
+const isPrivate = ip => { const [a,b] = oct(ip); return a===10 || (a===172 && b>=16 && b<=31) || (a===192 && b===168); };
+const ordinal = i => ['1.er','2.º','3.er','4.º'][i];
+
+function bitsHTML(ip, netBits, subBits, opts={}){
+  // netBits: bits de red original, subBits: hasta este bit es subred
+  const o = oct(ip); let h = '<div class="bits">'; let k = 0;
+  for(let i=0;i<4;i++){
+    const b = bin8(o[i]);
+    for(let j=0;j<8;j++,k++){
+      const cls = k < netBits ? 'n' : k < subBits ? 's' : 'h';
+      h += `<span class="bit ${cls}" style="animation-delay:${(opts.delay||0) + k*18}ms">${b[j]}</span>`;
+    }
+    if(i<3) h += '<span class="bit-gap">.</span>';
+  }
+  return h + '</div>';
+}
+const legendHTML = (a='Red',b='Subred (bits prestados)',c='Host') =>
+  `<div class="legend"><span style="--c:var(--net)">${a}</span><span style="--c:var(--sub)">${b}</span><span style="--c:var(--host)">${c}</span></div>`;
+
+/* ================= NAV / REVEAL ================= */
+$('#menuBtn').onclick = () => $('#navLinks').classList.toggle('open');
+document.querySelectorAll('#navLinks a').forEach(a => a.addEventListener('click', () => $('#navLinks').classList.remove('open')));
+const io = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} }), {threshold:.12});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+const secs = [...document.querySelectorAll('main section[id]')];
+window.addEventListener('scroll', () => {
+  let cur = ''; secs.forEach(s => { if(scrollY >= s.offsetTop - 120) cur = s.id; });
+  document.querySelectorAll('#navLinks a').forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#'+cur));
+}, {passive:true});
+
+/* ================= HERO ================= */
+function heroAnim(){
+  const rows = [
+    ['<span class="k">IP</span>','<span class="v">172.163.22.55 /28</span>'],
+    ['<span class="k">Máscara</span>','<span class="v">255.255.255.240</span>'],
+    ['hr'],
+    ['<span class="k">55 &nbsp;</span>','<span>0011 0111</span>'],
+    ['<span class="k">240 AND</span>','<span>1111 0000</span>'],
+    ['<span class="k">= 48</span>','<span class="g">0011 0000</span>'],
+    ['hr'],
+    ['<span class="k">Red</span>','<span class="g">172.163.22.48</span>'],
+    ['<span class="k">Hosts</span>','<span class="v">.49 → .62</span>'],
+    ['<span class="k">Broadcast</span>','<span class="v">172.163.22.63</span>'],
+    ['<span class="k">Siguiente</span>','<span class="v">172.163.22.64 /28</span>'],
+  ];
+  $('#heroTerm').innerHTML = '<div class="term-top"><i></i><i></i><i></i></div>' + rows.map((r,i) =>
+    r[0]==='hr' ? `<hr>` : `<div class="row" style="animation-delay:${i*.28}s">${r[0]}${r[1]}</div>`).join('');
+}
+heroAnim(); setInterval(heroAnim, 9000);
+
+/* ================= GUÍA ================= */
+let gStepsData = [], gShown = 0;
+function buildGuide(ip, p){
+  const I = info(ip, p), o = oct(ip), cl = I.cls, idx = I.idx, mv = I.mo[idx], s = I.salto;
+  const netOct = Math.floor(o[idx]/s)*s;
+  const steps = [];
+  const fullOct = (arr, i, val, rest) => arr.map((v,k) => k<i ? v : k===i ? `<span class="hi">${val}</span>` : rest).join('.');
+
+  // 1 clase
+  steps.push({t:'Identifica la clase de la IP', h:`
+    <p>Mira el <b>primer octeto</b>: <span class="mono">${o[0]}</span>.</p>
+    <div class="calc">${o[0]} → Clase <span class="hi">${cl.c}</span>${cl.def ? `  ·  prefijo por defecto /${cl.def}  ·  ${cl.mask}` : '  ·  ' + cl.note}</div>
+    ${isPrivate(ip) ? '<div class="note ok">Es una IP privada (RFC 1918).</div>' : '<div class="note info">Es una IP pública (no está en los rangos privados).</div>'}`});
+
+  // 2 máscara
+  let mb = ''; for(let i=0;i<4;i++) mb += bin8(I.mo[i]) + (i<3?'.':'');
+  steps.push({t:'Convierte el prefijo en máscara', h:`
+    <p>/${p} significa <b>${p} bits en 1</b>. Cada 255 equivale a 8 bits (/8).</p>
+    ${bitsHTML(I.mask, Math.min(p, cl.def||p), p)}
+    ${legendHTML('Red de la clase','Bits prestados','Host (0)')}
+    <div class="calc">${p} = ${Array(Math.floor(p/8)).fill(8).join(' + ')}${p%8 ? ' + '+(p%8) : ''}  →  <span class="hi">${ipStr(I.mask)}</span>
+Octeto interesante: el ${ordinal(idx)} (valor <span class="am">${mv}</span> = ${bin8s(mv)})</div>`});
+
+  // 3 subredes
+  const inOct = 2 ** (p - idx*8);
+  const subNote = (cl.def && cl.def !== idx*8) ? `<div class="note">Dentro del bloque /${idx*8} (solo el ${ordinal(idx)} octeto) hay 2^(${p}−${idx*8}) = <b>${fmt(inOct)}</b> subredes. El total respecto a la clase ${cl.c} es el de arriba.</div>` : '';
+  steps.push({t:'Calcula la cantidad de subredes', h: cl.def && p > cl.def ? `
+    <p>Bits prestados = prefijo nuevo − prefijo de la clase.</p>
+    <div class="calc">n = ${p} − ${cl.def} = <span class="hi">${p-cl.def}</span>
+Subredes = 2^${p-cl.def} = <span class="ok">${fmt(2**(p-cl.def))}</span></div>${subNote}` :
+    `<p>El prefijo /${p} no es mayor que el de la clase, así que no hay bits prestados respecto a la clase (es una superred o una clase sin máscara por defecto).</p><div class="calc">Subredes dentro del bloque /${idx*8}: 2^(${p}−${idx*8}) = ${fmt(inOct)}</div>`});
+
+  // 4 hosts
+  steps.push({t:'Calcula los hosts utilizables', h:`
+    <div class="calc">h = 32 − ${p} = <span class="hi">${32-p}</span> bits de host
+Hosts = 2^${32-p} − 2 = ${fmt(2**(32-p))} − 2 = <span class="ok">${fmt(I.hosts)}</span></div>
+    <p>Se restan 2: una para la <b>dirección de red</b> y otra para el <b>broadcast</b>.</p>`});
+
+  // 5 AND
+  const ib = bin8(o[idx]), mbb = bin8(mv), rb = bin8(o[idx] & mv);
+  let g = '';
+  const rowG = (lbl, bits, cls, dec, d0) => `<span class="lbl">${lbl}</span>` + [...bits].map((b,k)=>`<span class="c ${cls(b)}" style="animation-delay:${d0+k*60}ms">${b}</span>`).join('') + `<span class="dec">${dec}</span>`;
+  g += rowG('IP', ib, b=>b==='1'?'one':'', o[idx], 0);
+  g += rowG('Máscara', mbb, b=>b==='1'?'one':'', mv, 400);
+  g += rowG('AND =', rb, ()=> 'res', o[idx] & mv, 900);
+  steps.push({t:'Operación AND en el octeto interesante', h:`
+    <p>Los octetos con 255 se copian igual y los que tienen 0 quedan en 0. Solo se opera el ${ordinal(idx)} octeto: <b>1 AND 1 = 1</b>, cualquier otro caso = 0.</p>
+    <div class="and-grid">${g}</div>
+    <div class="calc">Red = ${fullOct(o, idx, netOct, '0')}</div>`});
+
+  // 6 salto
+  const mult = []; const total = 256/s;
+  let from = 0, to = total-1;
+  if(total > 24){ const c = Math.floor(o[idx]/s); from = Math.max(0, c-8); to = Math.min(total-1, c+8); }
+  for(let k=from;k<=to;k++) mult.push(k*s);
+  steps.push({t:'Salto de red (método rápido sin binario)', h:`
+    <div class="calc">Salto = 256 − ${mv} = <span class="hi">${s}</span>  (equivale a 2^${Math.log2(s)})</div>
+    <p>Las subredes avanzan de ${s} en ${s} en el ${ordinal(idx)} octeto. Busca el múltiplo de ${s} más cercano <b>sin pasarse</b> de ${o[idx]}:</p>
+    <div class="chips">${from>0?'<span class="chip" style="animation-delay:0s">…</span>':''}${mult.map((m,k)=>`<span class="chip ${m===netOct?'on':m===netOct+s?'nx':''}" style="animation-delay:${k*40}ms">${m}</span>`).join('')}${to<total-1?'<span class="chip">…</span>':''}</div>
+    <div class="calc">${o[idx]} ÷ ${s} = ${Math.floor(o[idx]/s)} (entero) → ${Math.floor(o[idx]/s)} × ${s} = <span class="ok">${netOct}</span>  ✓ coincide con el AND</div>`});
+
+  // 7 resultados
+  const next = I.next !== null ? ipStr(I.next) + ' /' + p : '— (fin del espacio)';
+  steps.push({t:'Rango completo de la subred', h:`
+    <div class="tbl-wrap"><table class="result-tbl"><tbody>
+      <tr><td>Dirección de red</td><td class="mono">${ipStr(I.net)}</td><td class="arrow">resultado del AND</td></tr>
+      <tr><td>Primer host</td><td class="mono">${ipStr(I.first)}</td><td class="arrow">red + 1</td></tr>
+      <tr><td>Último host</td><td class="mono">${ipStr(I.last)}</td><td class="arrow">broadcast − 1</td></tr>
+      <tr><td>Broadcast</td><td class="mono">${ipStr(I.bc)}</td><td class="arrow">siguiente red − 1</td></tr>
+      <tr><td>Siguiente red</td><td class="mono">${next}</td><td class="arrow">${netOct} + ${s} = ${netOct+s}${netOct+s>=256?' (acarreo al octeto anterior)':''}</td></tr>
+    </tbody></table></div>
+    <div class="note ok" style="margin-top:10px">Comprobación: ${ipStr(ip)} ${ip===I.net?'es la dirección de red.':ip===I.bc?'es la dirección de broadcast (no asignable a un host).':`está entre ${ipStr(I.first)} y ${ipStr(I.last)} ✓ es un host válido.`}</div>
+    ${bitsHTML(I.net, cl.def && cl.def < p ? cl.def : p, p)}${legendHTML()}`});
+  return steps;
+}
+function renderGuide(){
+  const box = $('#gSteps'); box.innerHTML = '';
+  gStepsData.slice(0, gShown).forEach((s,i) => {
+    const d = document.createElement('div'); d.className = 'step';
+    d.innerHTML = `<div class="step-num">${i+1}</div><div class="card"><h3>${s.t}</h3>${s.h}</div>`;
+    box.appendChild(d);
+  });
+  $('#gBar').style.width = (gShown/gStepsData.length*100)+'%';
+  $('#gCount').textContent = `${gShown} / ${gStepsData.length}`;
+  $('#gPrev').disabled = gShown <= 1; $('#gNext').disabled = gShown >= gStepsData.length;
+}
+function loadGuide(){
+  const ip = parseIP($('#gIp').value), p = +$('#gP').value;
+  $('#gErr').textContent = '';
+  if(ip === null){ $('#gErr').textContent = 'IP no válida.'; return; }
+  if(!(p >= 8 && p <= 30)){ $('#gErr').textContent = 'Usa un prefijo entre /8 y /30.'; return; }
+  gStepsData = buildGuide(ip, p); gShown = 1; renderGuide();
+  renderWorked(ip, p);
+}
+
+/* ===== Ejemplo desarrollado (hoja) ===== */
+const clsRange = {A:'1–126', B:'128–191', C:'192–223'};
+function wBits(n, kind, d0, step=.05){
+  const b = bin8(n); let h = '';
+  [...b].forEach((x,k) => { if(k===4) h += '<span class="wb sp"></span>';
+    const c = kind==='res' ? 'res' : x==='1' ? 'one' : '';
+    h += `<span class="wb ${c}" style="--d:${(d0 + k*step).toFixed(2)}s">${x}</span>`; });
+  return h;
+}
+function renderWorked(ip, p){
+  const I = info(ip, p), o = oct(ip), cl = I.cls, idx = I.idx, mv = I.mo[idx], s = I.salto;
+  const netOct = Math.floor(o[idx]/s)*s, nxt = netOct + s;
+  const markOct = arr => arr.map((v,k) => k===idx ? `<mark>${v}</mark>` : v).join('.');
+  const classLine = cl.def
+    ? `<b>${o[0]}</b> está en el rango <b>clase ${cl.c}</b> (${clsRange[cl.c]}) = <span class="w-pill">/${cl.def}</span>`
+    : `<b>${o[0]}</b> → ${cl.note} (sin máscara por defecto)`;
+  const subs = cl.def && p > cl.def
+    ? `2^(${p} − ${cl.def}) = 2^${p-cl.def} = <b>${fmt(2**(p-cl.def))}</b>`
+    : `<span class="muted">no aplica (/${p} ≤ prefijo de la clase)</span>`;
+  const leftTxt = idx === 3 ? 'el último octeto' : `el ${ordinal(idx)} octeto`;
+  $('#worked').innerHTML = `
+    <div class="w-head">
+      <div><span class="tag amber">Ejemplo desarrollado</span>
+        <h3>Se le otorga la IP <span class="w-ip">${ipStr(ip)} /${p}</span></h3></div>
+      <button class="btn ghost sm" id="wPlay">↻ Reproducir</button>
+    </div>
+    <div class="w-class w-a" style="--d:.15s">
+      <svg viewBox="0 0 46 26"><path d="M2 2v12q0 8 8 8h30M34 16l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="--d:.2s"/></svg>
+      <span>${classLine}</span>
+    </div>
+    <div class="w-formulas">
+      <span class="w-lbl w-a" style="--d:.55s">Cantidad de subredes:</span><span class="w-eq w-a" style="--d:.7s">${subs}</span>
+      <span class="w-lbl w-a" style="--d:.95s">Cantidad de hosts utilizables:</span><span class="w-eq w-a" style="--d:1.1s">2^(32 − ${p}) − 2 = 2^${32-p} − 2 = <b>${fmt(I.hosts)}</b></span>
+      <div class="w-branch w-a" style="--d:1.35s">
+        <svg viewBox="0 0 34 40"><path d="M4 0v30q0 6 6 6h20M25 31l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="--d:1.4s"/></svg>
+        <div><span>1 para la dirección de red</span><span>1 para el broadcast</span></div>
+      </div>
+    </div>
+    <div class="w-split">
+      <div class="w-a" style="--d:1.75s">
+        <p class="w-tip">💡 Tomar ${leftTxt}: todo lo que esté con 255 se queda igual, tanto abajo como arriba (y lo que tenga 0 pasa a 0).</p>
+        <div class="w-ipm">
+          <span>IP:</span><span>${markOct(o)}</span>
+          <span>MÁSCARA:</span><span>${markOct(I.mo)}</span>
+        </div>
+      </div>
+      <div>
+        <div class="w-sub w-a" style="--d:2s">Representación en binario · ${ordinal(idx)} octeto</div>
+        <div class="w-bin"><span class="lb">${o[idx]}</span>${wBits(o[idx], 'n', 2.15)}</div>
+        <div class="w-bin"><span class="lb">${mv}</span>${wBits(mv, 'n', 2.65)}<span class="w-tagsalto w-a" style="--d:3.2s">salto de red: 256 − ${mv} = ${s}</span></div>
+        <div class="w-rule" style="--d:3.4s"></div>
+        <div class="w-bin"><span class="lb">AND</span>${wBits(netOct, 'res', 3.6)}<span class="w-eqv w-a" style="--d:4.1s">= <span class="w-big">${netOct}</span></span></div>
+      </div>
+    </div>
+    <div class="w-results">
+      <span class="r rl w-a" style="--d:4.4s">Dirección de red:</span><span class="r rv n w-a" style="--d:4.5s">${ipStr(I.net)}</span><span class="r ra w-a" style="--d:4.5s"></span>
+      <span class="r rl w-a" style="--d:4.65s">Primer host:</span><span class="r rv w-a" style="--d:4.75s">${ipStr(I.first)}</span><span class="r ra w-a" style="--d:4.75s">+1</span>
+      <span class="r rl w-a" style="--d:4.9s">Último host:</span><span class="r rv w-a" style="--d:5s">${ipStr(I.last)}</span><span class="r ra w-a" style="--d:5s">−1</span>
+      <span class="r rl w-a" style="--d:5.15s">Broadcast:</span><span class="r rv w-a" style="--d:5.25s">${ipStr(I.bc)}</span><span class="r ra w-a" style="--d:5.25s">−1</span>
+      <span class="r rl w-a" style="--d:5.4s">Siguiente red:</span><span class="r rv n w-a" style="--d:5.5s">${I.next!==null ? ipStr(I.next)+' /'+p : '—'}</span><span class="r ra w-a" style="--d:5.5s"></span>
+      <div class="w-rail" style="--d:3.3s"><span class="t w-a" style="--d:3.3s">salto de red: ${s}</span><span class="b w-a" style="--d:5.7s">${netOct} + ${s} = ${nxt}${nxt===256?' → acarreo':''}</span></div>
+    </div>`;
+  $('#wPlay').onclick = playWorked;
+  playWorked();
+}
+function playWorked(){ const w = $('#worked'); w.classList.remove('play'); void w.offsetWidth; w.classList.add('play'); }
+new IntersectionObserver((es, ob) => es.forEach(e => { if(e.isIntersecting){ playWorked(); ob.disconnect(); } }), {threshold:.25}).observe($('#worked'));
+
+/* ===== Modo oscuro ===== */
+$('#themeBtn').onclick = () => {
+  const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  try{ localStorage.setItem('subnetlab-theme', t); }catch(e){}
+};
+$('#gLoad').onclick = loadGuide;
+$('#gNext').onclick = () => { if(gShown < gStepsData.length){ gShown++; renderGuide(); const st = document.querySelectorAll('#gSteps .step'); st[st.length-1].scrollIntoView({behavior:'smooth', block:'nearest'}); } };
+$('#gPrev').onclick = () => { if(gShown > 1){ gShown--; renderGuide(); } };
+$('#gAll').onclick = () => { gShown = gStepsData.length; renderGuide(); };
+loadGuide();
+
+/* ================= TOPOLOGÍA (motor compartido FLSM / VLSM) ================= */
+const vColors = ['#2c6e9b','#357f6e','#b7792a','#7a6a9b','#b04a3c','#4f8aa8','#6b8f3a','#a35d7a','#5b6b7b','#c09a3a'];
+const DT = [
+  {k:'pc',  l:'PC',        icon:'i-pc',      name:'PC',        nic:'FastEthernet0'},
+  {k:'lap', l:'Laptop',    icon:'i-laptop',  name:'Laptop',    nic:'FastEthernet0'},
+  {k:'srv', l:'Servidor',  icon:'i-server',  name:'Servidor',  nic:'FastEthernet0'},
+  {k:'prn', l:'Impresora', icon:'i-printer', name:'Impresora', nic:'FastEthernet0'},
+];
+const MAXD = 6;          // dispositivos dibujados por switch (el resto se agrupa)
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+class Topo {
+  constructor(root){
+    this.root = root; this.busy = false; this.pick = null; this.uid = Math.random().toString(36).slice(2,7);
+    document.addEventListener('keydown', e => { if(e.key === 'Escape'){ this.closePop(); this.endPick(); } });
+  }
+
+  build(areasIn){
+    const cnt = {pc:0, lap:0, srv:0, prn:0};
+    this.warns = [];
+    this.areas = areasIn.map((a, i) => {
+      const I = info(a.net, a.p), cap = Math.max(0, I.hosts - 1);
+      let ip = I.first + 1, left = cap; const devs = [];
+      const want = DT.reduce((s,t) => s + Math.max(0, a.counts[t.k]|0), 0);
+      if(want > cap) this.warns.push(`<b>${esc(a.name)}</b>: pediste ${want} dispositivos, pero /${a.p} solo deja ${cap} IPs libres (${I.hosts} útiles − 1 gateway). Se asignaron ${cap}.`);
+      DT.forEach(t => {
+        const n = Math.min(left, Math.max(0, a.counts[t.k]|0)); left -= n;
+        for(let j = 0; j < n; j++) devs.push({id:`D${i}_${devs.length}`, area:i, type:t, name:t.name + (cnt[t.k]++), ip: ip++, port: devs.length + 1});
+      });
+      return {...a, i, I, gw: I.first, iface: `Gi0/${i}`, sw: `Switch${i}`, devs, free: cap - devs.length};
+    });
+    this.dev = {}; this.areas.forEach(a => a.devs.forEach(d => this.dev[d.id] = d));
+    this.pick = null; this.busy = false;
+    this.layout(); this.render();
+    return this;
+  }
+
+  static shown(devs, m){
+    const g = DT.map(t => devs.filter(d => d.type === t)), out = [];
+    while(out.length < m && g.some(x => x.length)) g.forEach(x => { if(x.length && out.length < m) out.push(x.shift()); });
+    return devs.filter(d => out.includes(d));
+  }
+
+  layout(){
+    const n = this.areas.length, AW = 200;
+    this.W = Math.max(760, n * AW); const off = (this.W - n * AW) / 2;
+    const maxSlots = Math.max(1, ...this.areas.map(a => Math.min(a.devs.length, MAXD)));
+    this.H = 372 + Math.ceil(maxSlots / 3) * 92;
+    this.pos = {R: {x: this.W / 2, y: 64}};
+    this.areas.forEach((a, i) => {
+      const sx = off + AW * (i + .5);
+      this.pos['S'+i] = {x: sx, y: 250};
+      a.shown = a.devs.length <= MAXD ? a.devs : Topo.shown(a.devs, MAXD - 1);
+      a.hidden = a.devs.filter(d => !a.shown.includes(d));
+      const slots = a.shown.length + (a.hidden.length ? 1 : 0);
+      for(let k = 0; k < slots; k++){
+        const r = Math.floor(k / 3), c = k % 3, inRow = Math.min(3, slots - r * 3);
+        const p = {x: sx + (c - (inRow - 1) / 2) * 62, y: 372 + r * 92};
+        if(k < a.shown.length) this.pos[a.shown[k].id] = p; else this.pos['C'+i] = p;
+      }
+      a.hidden.forEach(d => this.pos[d.id] = this.pos['C'+i]);
+    });
+  }
+  vis(id){ const d = this.dev[id]; return d && this.areas[d.area].hidden.includes(d) ? 'C' + d.area : id; }
+
+  render(){
+    const P = this.pos, links = [], leds = [], nodes = [];
+    this.linkMap = {};
+    const cable = (a, b, cls='') => {
+      const A = P[a], B = P[b], id = `L${this.uid}_${links.length}`;
+      this.linkMap[a+'|'+b] = this.linkMap[b+'|'+a] = id;
+      links.push(`<line id="${id}" class="t-cable ${cls}" x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}"/>`);
+      const len = Math.hypot(B.x - A.x, B.y - A.y) || 1, ux = (B.x - A.x) / len, uy = (B.y - A.y) / len;
+      const dA = a === 'R' ? 36 : 26, dB = 26;
+      leds.push(`<circle class="t-led" r="4" cx="${A.x + ux*dA}" cy="${A.y + uy*dA}"/>`, `<circle class="t-led" r="4" cx="${B.x - ux*dB}" cy="${B.y - uy*dB}" style="animation-delay:-1.2s"/>`);
+    };
+    this.areas.forEach((a, i) => {
+      cable('R', 'S'+i, 'up');
+      a.shown.forEach(d => cable('S'+i, d.id));
+      if(a.hidden.length) cable('S'+i, 'C'+i);
+    });
+    // etiquetas de interfaz del router (sobre el cable)
+    const ifl = this.areas.map((a, i) => {
+      const A = P.R, B = P['S'+i], x = A.x + (B.x - A.x) * .78, y = A.y + (B.y - A.y) * .78;
+      const t = `${a.iface} · ${ipStr(a.gw)}`, w = t.length * 6.2 + 10;
+      return `<g><rect class="t-ifbg" x="${x - w/2}" y="${y - 9}" width="${w}" height="17" rx="5"/><text class="t-if" x="${x}" y="${y + 3.5}" text-anchor="middle">${t}</text></g>`;
+    });
+    nodes.push(`<g class="t-node" data-id="R" transform="translate(${P.R.x},${P.R.y})"><title>Router0</title><circle class="t-halo" r="38"/>
+      <use href="#i-router" x="-32" y="-34" width="64" height="64" style="color:var(--primary)"/>
+      <text class="t-lbl" x="44" y="-6">Router0</text><text class="t-sub" x="44" y="8">${this.areas.length} interfaces</text></g>`);
+    this.areas.forEach((a, i) => {
+      const S = P['S'+i];
+      nodes.push(`<g class="t-node" data-id="S${i}" transform="translate(${S.x},${S.y})"><title>${a.sw}</title><circle class="t-halo" r="30"/>
+        <use href="#i-switch" x="-28" y="-30" width="56" height="56" style="color:${a.color}"/>
+        <rect class="t-ifbg" x="-${Math.max(a.name.length * 3.6, 52) + 8}" y="19" width="${(Math.max(a.name.length * 3.6, 52) + 8) * 2}" height="30" rx="6"/>
+        <text class="t-lbl" y="30" text-anchor="middle" style="fill:${a.color}">${esc(a.name)}</text>
+        <text class="t-sub" y="43" text-anchor="middle">${ipStr(a.I.net)}/${a.p}</text></g>`);
+      a.shown.forEach(d => {
+        const p = P[d.id];
+        nodes.push(`<g class="t-node" data-id="${d.id}" transform="translate(${p.x},${p.y})"><title>${d.name} · ${ipStr(d.ip)}</title><circle class="t-halo" r="24"/>
+          <use href="#${d.type.icon}" x="-21" y="-23" width="42" height="42" style="color:${a.color}"/>
+          <text class="t-lbl" y="31" text-anchor="middle" style="font-size:10px">${d.name}</text>
+          <text class="t-sub" y="43" text-anchor="middle">.${ip4last(d.ip)}</text></g>`);
+      });
+      if(a.hidden.length){
+        const p = P['C'+i];
+        nodes.push(`<g class="t-node" data-id="C${i}" transform="translate(${p.x},${p.y})"><title>${a.hidden.length} dispositivos más</title><circle class="t-halo" r="26"/>
+          <rect class="t-clu" x="-22" y="-18" width="44" height="34" rx="7"/>
+          <text class="t-lbl" y="4" text-anchor="middle" style="fill:${a.color};font-size:12px">+${a.hidden.length}</text>
+          <text class="t-sub" y="31" text-anchor="middle">más</text></g>`);
+      }
+    });
+    if(!this.areas.length){ this.root.innerHTML = '<p class="muted">No hay áreas para dibujar.</p>'; return; }
+
+    const opt = (sel) => this.areas.map(a => `<optgroup label="${esc(a.name)} · ${ipStr(a.I.net)}/${a.p}">${
+      a.devs.map(d => `<option value="${d.id}" ${d.id===sel?'selected':''}>${d.name} · ${ipStr(d.ip)}</option>`).join('')}</optgroup>`).join('');
+    const optDst = this.areas.map(a => `<optgroup label="${esc(a.name)}"><option value="G${a.i}">Router0 ${a.iface} · ${ipStr(a.gw)} (gateway)</option>${
+      a.devs.map(d => `<option value="${d.id}">${d.name} · ${ipStr(d.ip)}</option>`).join('')}</optgroup>`).join('');
+    const allDev = this.areas.flatMap(a => a.devs);
+    const s0 = allDev[0], d0 = allDev.find(d => s0 && d.area !== s0.area) || allDev[1];
+
+    this.root.innerHTML = `
+      ${this.warns.length ? `<div class="note t-warn">${this.warns.join('<br>')}</div>` : ''}
+      <div class="topo-ctrl">
+        <div class="field"><label>Origen</label><select class="t-src">${opt(s0 && s0.id)}</select></div>
+        <div class="field"><label>Destino</label><select class="t-dst">${optDst}</select></div>
+        <button class="btn amber sm t-go"><svg><use href="#i-play"/></svg>Simular Ping</button>
+        <button class="btn ghost sm t-clr">Limpiar consola</button>
+      </div>
+      <div class="note info t-pickbar">Modo ping: haz clic en el <b>dispositivo destino</b> del diagrama (o en el router para hacer ping a su gateway). <a href="#" class="t-cancel">Cancelar</a></div>
+      <div class="topo-stage">
+        <div class="topo-wrap"><svg viewBox="0 0 ${this.W} ${this.H}" style="min-width:${Math.min(this.W, 900)}px">
+          <g>${links.join('')}</g><g>${ifl.join('')}</g><g>${leds.join('')}</g><g>${nodes.join('')}</g><g class="t-pk"></g>
+        </svg></div>
+        <div class="t-pop" hidden></div>
+      </div>
+      <div class="t-console"><span class="c-info">Haz clic en cualquier equipo para ver su configuración IP, o elige origen y destino y pulsa «Simular Ping».</span>\n</div>
+      <div class="dev-legend" style="margin-top:8px">${DT.map(t => `<span><svg><use href="#${t.icon}"/></svg>${t.l}</span>`).join('')}<span><svg viewBox="0 0 10 10" style="width:10px;height:10px"><circle cx="5" cy="5" r="4" fill="#3d9f5f"/></svg>Enlace activo</span></div>`;
+    const q = s => this.root.querySelector(s);
+    this.svg = q('.topo-wrap svg'); this.popEl = q('.t-pop'); this.con = q('.t-console');
+    if(d0) q('.t-dst').value = d0.id;
+    const wr = q('.topo-wrap'); requestAnimationFrame(() => { wr.scrollLeft = (wr.scrollWidth - wr.clientWidth) / 2; });
+    q('.t-go').onclick = () => this.ping(q('.t-src').value, q('.t-dst').value);
+    q('.t-clr').onclick = () => { this.con.innerHTML = ''; };
+    q('.t-cancel').onclick = e => { e.preventDefault(); this.endPick(); };
+    this.svg.addEventListener('click', e => {
+      const g = e.target.closest('.t-node'); if(!g) return;
+      this.onNode(g.dataset.id, e);
+    });
+    this.popEl.addEventListener('click', e => this.onPop(e));
+  }
+
+  /* ---------- popups ---------- */
+  onNode(id, e){
+    if(this.pick){
+      if(id === 'R') return this.ping(this.pick, 'G' + this.dev[this.pick].area);
+      if(id.startsWith('D')) return this.ping(this.pick, id);
+      if(id.startsWith('C')) return this.showPop(this.clusterPop(+id.slice(1)), e);
+      return;
+    }
+    if(id === 'R') this.showPop(this.routerPop(), e);
+    else if(id.startsWith('S')) this.showPop(this.switchPop(+id.slice(1)), e);
+    else if(id.startsWith('C')) this.showPop(this.clusterPop(+id.slice(1)), e);
+    else this.showPop(this.devPop(id), e);
+  }
+  showPop(html, e){
+    const st = this.root.querySelector('.topo-stage').getBoundingClientRect();
+    this.popEl.innerHTML = html; this.popEl.hidden = false;
+    const w = Math.min(300, st.width - 16);
+    let x = e.clientX - st.left + 14, y = e.clientY - st.top + 10;
+    if(x + w > st.width - 8) x = Math.max(8, e.clientX - st.left - w - 14);
+    this.popEl.style.left = x + 'px'; this.popEl.style.top = Math.max(8, y) + 'px';
+    this.lastEvt = {clientX: e.clientX, clientY: e.clientY};
+  }
+  closePop(){ if(this.popEl) this.popEl.hidden = true; }
+  head(icon, color, title, sub){ return `<header><svg style="color:${color}"><use href="#${icon}"/></svg><b>${title}<br><span class="small muted" style="font-weight:500">${sub}</span></b><button data-act="close" aria-label="Cerrar">×</button></header>`; }
+  devPop(id){
+    const d = this.dev[id], a = this.areas[d.area], I = a.I;
+    const dsts = this.areas.map(b => `<optgroup label="${esc(b.name)}"><option value="G${b.i}">Router0 ${b.iface} · ${ipStr(b.gw)}</option>${
+      b.devs.filter(x => x.id !== id).map(x => `<option value="${x.id}">${x.name} · ${ipStr(x.ip)}</option>`).join('')}</optgroup>`).join('');
+    return this.head(d.type.icon, a.color, d.name, `${d.type.l} · ${esc(a.name)}`) + `<div class="pb">
+      <div class="sect">Configuración IP · ${d.type.nic}</div>
+      <dl><dt>Dirección IPv4</dt><dd>${ipStr(d.ip)}</dd><dt>Máscara</dt><dd>${ipStr(I.mask)}</dd><dt>Prefijo</dt><dd>/${a.p}</dd>
+      <dt>Gateway</dt><dd>${ipStr(a.gw)}</dd><dt>Red</dt><dd>${ipStr(I.net)}</dd><dt>Broadcast</dt><dd>${ipStr(I.bc)}</dd>
+      <dt>Conectado a</dt><dd>${a.sw} Fa0/${d.port}</dd></dl>
+      <div class="t-ping"><button class="btn amber sm" data-act="ping-start" data-id="${id}"><svg><use href="#i-play"/></svg>Simular Ping</button>
+        <div data-box hidden><select data-dst>${dsts}</select>
+        <button class="btn sm" data-act="ping-send" data-id="${id}" style="margin-top:6px">Enviar ping</button>
+        <div class="small muted" style="margin-top:4px">…o haz clic en un equipo del diagrama.</div></div></div></div>`;
+  }
+  routerPop(){
+    return this.head('i-router', 'var(--primary)', 'Router0', 'Router · gateway de todas las subredes') + `<div class="pb">
+      <div class="sect">Interfaces (1.ª IP útil de cada subred)</div><div class="plist">${this.areas.map(a =>
+        `<div style="cursor:default"><span>${a.iface}</span><span>${ipStr(a.gw)}/${a.p}</span></div>`).join('')}</div>
+      <p class="small muted" style="margin:8px 0 0">Cada interfaz es el <b>gateway predeterminado</b> de su área: los equipos envían allí todo lo que va a otra red.</p></div>`;
+  }
+  switchPop(i){
+    const a = this.areas[i], I = a.I, c = DT.map(t => [t, a.devs.filter(d => d.type === t).length]).filter(x => x[1]);
+    return this.head('i-switch', a.color, a.sw, esc(a.name)) + `<div class="pb"><dl>
+      <dt>Red</dt><dd>${ipStr(I.net)}/${a.p}</dd><dt>Máscara</dt><dd>${ipStr(I.mask)}</dd><dt>Gateway</dt><dd>${ipStr(a.gw)}</dd>
+      <dt>Rango</dt><dd>${ipStr(I.first)} – ${ipStr(I.last)}</dd><dt>Broadcast</dt><dd>${ipStr(I.bc)}</dd>
+      <dt>Uplink</dt><dd>Gi0/1 → Router0 ${a.iface}</dd><dt>Equipos</dt><dd>${a.devs.length} ${c.length ? '(' + c.map(x => x[1] + ' ' + x[0].l).join(', ') + ')' : ''}</dd>
+      <dt>IPs libres</dt><dd>${a.free}</dd></dl></div>`;
+  }
+  clusterPop(i){
+    const a = this.areas[i];
+    return this.head('i-grid', a.color, `+${a.hidden.length} equipos`, esc(a.name)) + `<div class="pb">
+      <div class="sect">${this.pick ? 'Elige el destino del ping' : 'Haz clic para ver su configuración'}</div>
+      <div class="plist">${a.hidden.map(d => `<div data-act="${this.pick ? 'pick' : 'open'}" data-id="${d.id}"><span>${d.name}</span><span>${ipStr(d.ip)}</span></div>`).join('')}</div></div>`;
+  }
+  onPop(e){
+    const t = e.target.closest('[data-act]'); if(!t) return;
+    const act = t.dataset.act, id = t.dataset.id;
+    if(act === 'close'){ this.closePop(); this.endPick(); }
+    else if(act === 'open') this.showPop(this.devPop(id), this.lastEvt);
+    else if(act === 'pick') this.ping(this.pick, id);
+    else if(act === 'ping-start'){
+      t.hidden = true; this.popEl.querySelector('[data-box]').hidden = false;
+      this.startPick(id);
+    }
+    else if(act === 'ping-send') this.ping(id, this.popEl.querySelector('[data-dst]').value);
+  }
+  mark(id, cls){ this.svg.querySelectorAll('.t-node.' + cls).forEach(n => n.classList.remove(cls)); if(id){ const n = this.svg.querySelector(`.t-node[data-id="${id}"]`); if(n) n.classList.add(cls); } }
+  startPick(id){ this.pick = id; this.mark(this.vis(id), 'src'); this.root.querySelector('.t-pickbar').classList.add('on'); }
+  endPick(){ this.pick = null; const b = this.root.querySelector('.t-pickbar'); if(b) b.classList.remove('on'); }
+
+  /* ---------- ping ---------- */
+  log(html, cls=''){ this.con.insertAdjacentHTML('beforeend', `<span class="${cls}">${html}</span>\n`); this.con.scrollTop = this.con.scrollHeight; }
+  travel(nodes, kind){
+    return new Promise(res => {
+      const pts = nodes.map(n => this.pos[n]), segs = []; let total = 0;
+      for(let k = 0; k < pts.length - 1; k++){
+        const len = Math.hypot(pts[k+1].x - pts[k].x, pts[k+1].y - pts[k].y);
+        segs.push({a: pts[k], b: pts[k+1], len, el: document.getElementById(this.linkMap[nodes[k] + '|' + nodes[k+1]])}); total += len;
+      }
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('class', 't-pkt ' + kind);
+      g.innerHTML = '<rect x="-10" y="-7" width="20" height="14" rx="2"/><path d="M-10 -7 L0 1 L10 -7"/>';
+      this.svg.querySelector('.t-pk').appendChild(g);
+      const dur = reduceMotion ? 300 : Math.max(900, total / 0.42), t0 = performance.now();
+      const step = now => {
+        let dist = Math.min(1, (now - t0) / dur) * total, k = 0;
+        while(k < segs.length - 1 && dist > segs[k].len){ dist -= segs[k].len; k++; }
+        const s = segs[k], f = s.len ? Math.min(1, dist / s.len) : 1;
+        g.setAttribute('transform', `translate(${s.a.x + (s.b.x - s.a.x) * f},${s.a.y + (s.b.y - s.a.y) * f})`);
+        segs.forEach((x, j) => x.el && x.el.classList.toggle('act', j === k));
+        if(now - t0 < dur) requestAnimationFrame(step);
+        else { segs.forEach(x => x.el && x.el.classList.remove('act')); g.remove(); res(); }
+      };
+      requestAnimationFrame(step);
+    });
+  }
+  async ping(srcId, dstId){
+    if(this.busy || !srcId || !dstId) return;
+    const s = this.dev[srcId]; if(!s) return;
+    const A = this.areas[s.area];
+    let dstIp, ttl, nodes, dName, dVis;
+    if(dstId.startsWith('G')){
+      const B = this.areas[+dstId.slice(1)];
+      dstIp = B.gw; ttl = 255; dName = `Router0 ${B.iface}`; dVis = 'R';
+      nodes = [this.vis(srcId), 'S' + s.area, 'R'];
+    } else {
+      const d = this.dev[dstId]; if(!d) return;
+      dstIp = d.ip; dName = d.name; dVis = this.vis(dstId);
+      if(d.id === s.id){ this.log(`C:\\> ping ${ipStr(dstIp)}`, 'c-cmd'); this.log('Es la propia interfaz del equipo (respuesta local, no sale a la red).', 'c-info'); return; }
+      ttl = d.area === s.area ? 128 : 127;
+      nodes = d.area === s.area ? [this.vis(srcId), 'S' + s.area, dVis] : [this.vis(srcId), 'S' + s.area, 'R', 'S' + d.area, dVis];
+    }
+    this.busy = true; this.endPick(); this.closePop();
+    this.root.querySelector('.t-src').value = srcId; this.root.querySelector('.t-dst').value = dstId;
+    this.mark(nodes[0], 'src'); this.mark(dVis, 'dst');
+    const same = ((dstIp & A.I.mask) >>> 0) === A.I.net;
+    const ipD = ipStr(dstIp);
+    this.log(`\n${s.name}  C:\\> ping ${ipD}`, 'c-cmd');
+    this.log(`# ${ipD} AND ${ipStr(A.I.mask)} = ${ipStr((dstIp & A.I.mask) >>> 0)} → ${same ? `misma red (${ipStr(A.I.net)}/${A.p})${dVis==='R' ? ': es mi gateway' : ': entrega directa por ' + A.sw}` : `otra red → envío al gateway ${ipStr(A.gw)}`}`, 'c-info');
+    this.log(`# Ruta: ${nodes.map(n => n === 'R' ? 'Router0' : n.startsWith('S') ? this.areas[+n.slice(1)].sw : n.startsWith('C') ? (n === nodes[0] ? s.name : dName) : this.dev[n].name).join(' → ')}`, 'c-info');
+    this.log(`Haciendo ping a ${ipD} con 32 bytes de datos:`);
+    await this.travel(nodes, 'req');
+    const dn = this.svg.querySelector(`.t-node[data-id="${dVis}"]`);
+    if(dn){ dn.classList.remove('hit'); void dn.getBBox(); dn.classList.add('hit'); }
+    await this.travel([...nodes].reverse(), 'rep');
+    for(let k = 0; k < 4; k++){ this.log(`Respuesta desde ${ipD}: bytes=32 tiempo${k ? '=1ms' : '<1ms'} TTL=${ttl}`, 'c-ok'); await wait(reduceMotion ? 0 : 280); }
+    this.log(`Estadísticas de ping para ${ipD}:\n    Paquetes: enviados = 4, recibidos = 4, perdidos = 0 (0% perdidos)`);
+    this.busy = false;
+  }
+}
+const ip4last = n => n % 256;
+let vTopo = null, fTopo = null;
+
+/* ================= SUBNETEO FIJO ================= */
+let fState = null;
+const fLabels = {subs:'Cantidad de subredes', hosts:'Hosts por subred', pref:'Nuevo prefijo (/)'};
+$('#fMode').onchange = () => { $('#fValLbl').textContent = fLabels[$('#fMode').value]; };
+document.querySelectorAll('[data-fx]').forEach(a => a.onclick = e => {
+  e.preventDefault(); const [ip,p,m,v] = a.dataset.fx.split('|');
+  $('#fIp').value = ip; $('#fP').value = p; $('#fMode').value = m; $('#fVal').value = v; $('#fMode').onchange(); runFixed();
+});
+function runFixed(){
+  const err = $('#fErr'); err.textContent = '';
+  const ip = parseIP($('#fIp').value), p0 = +$('#fP').value, mode = $('#fMode').value, v = +$('#fVal').value;
+  if(ip === null) return err.textContent = 'IP no válida.';
+  if(!(p0 >= 1 && p0 <= 30)) return err.textContent = 'Prefijo original entre /1 y /30.';
+  if(!(v >= 1)) return err.textContent = 'Ingresa un valor mayor que 0.';
+  let p1, why;
+  if(mode === 'subs'){ const n = Math.ceil(Math.log2(v)); p1 = p0 + n; why = `Necesitas ${v} subredes → 2^${n} = ${2**n} ≥ ${v} → se prestan <b>${n}</b> bits → /${p0} + ${n} = <b>/${p1}</b>`; }
+  else if(mode === 'hosts'){ const h = Math.ceil(Math.log2(v + 2)); p1 = 32 - h; why = `Necesitas ${v} hosts → ${v} + 2 = ${v+2} → 2^${h} = ${2**h} ≥ ${v+2} → ${h} bits de host → 32 − ${h} = <b>/${p1}</b>`; }
+  else { p1 = v; why = `Prefijo elegido: <b>/${p1}</b> → bits prestados = ${p1} − ${p0} = ${p1-p0}`; }
+  if(p1 > 30) return err.textContent = `El resultado sería /${p1}: no quedan hosts utilizables (máximo /30).`;
+  if(p1 < p0) return err.textContent = `Los hosts pedidos no caben: necesitarías /${p1}, más grande que la red /${p0}.`;
+  const base = info(ip, p0), I = info(base.net, p1);
+  const count = 2 ** (p1 - p0);
+  const curIdx = Math.floor((ip - base.net) / I.size);
+  fState = {base, p1, count, size: I.size, shown: 0, curIdx, ipGiven: ip};
+  $('#fOut').innerHTML = `
+    <div class="card"><h3>Resumen</h3>
+      <div class="note info" style="margin:0 0 12px">${why}</div>
+      <div class="kpis">
+        <div class="kpi"><small>Red base</small><b>${ipStr(base.net)}/${p0}</b></div>
+        <div class="kpi" style="animation-delay:.05s"><small>Nueva máscara</small><b>${ipStr(I.mask)}</b></div>
+        <div class="kpi" style="animation-delay:.1s"><small>Prefijo</small><b>/${p1}</b></div>
+        <div class="kpi" style="animation-delay:.15s"><small>Subredes</small><b>2^${p1-p0} = ${fmt(count)}</b></div>
+        <div class="kpi" style="animation-delay:.2s"><small>Hosts / subred</small><b>2^${32-p1}−2 = ${fmt(I.hosts)}</b></div>
+        <div class="kpi" style="animation-delay:.25s"><small>Salto</small><b>${I.salto} (${ordinal(I.idx)} oct.)</b></div>
+      </div>
+      <div style="margin-top:14px">${bitsHTML(base.net, p0, p1)}${legendHTML()}</div>
+    </div>
+    <div class="card"><h3>Mapa de subredes ${count > 256 ? '<span class="tag">primeras 256</span>' : ''}</h3>
+      <p class="small muted" style="margin-top:0">Cada cuadro es una subred. ${ip !== base.net ? 'En ámbar: la subred que contiene ' + ipStr(ip) + '.' : ''}</p>
+      <div class="blocks">${Array.from({length: Math.min(count,256)}, (_,k) => `<div class="blk ${k===curIdx && ip!==base.net?'cur':''}" title="#${k+1} · ${ipStr(base.net + k*I.size)}/${p1}" style="animation-delay:${Math.min(k,120)*8}ms"></div>`).join('')}</div>
+    </div>
+    <div class="card"><h3>Tabla de subredes</h3>
+      ${ip !== base.net ? `<p class="small muted" style="margin-top:0">${ipStr(ip)} pertenece a la subred <b>#${curIdx+1}</b>.</p>` : ''}
+      <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Red</th><th>Primer host</th><th>Último host</th><th>Broadcast</th></tr></thead><tbody id="fBody"></tbody></table></div>
+      <div class="more" id="fMore"></div>
+    </div>`;
+  $('#fTopoCard').innerHTML = `
+    <div class="card"><h3 style="display:flex;align-items:center;gap:8px"><svg style="width:24px;height:24px;color:var(--primary)"><use href="#i-network"/></svg>Topología de red</h3>
+      <p class="small muted" style="margin-top:0">Todas las subredes tienen el mismo tamaño (/${p1}). Elige cuántas dibujar y qué equipos tiene cada una (máx. ${fmt(Math.max(0, I.hosts - 1))} por subred: ${fmt(I.hosts)} útiles − 1 gateway). Haz clic en cualquier equipo.</p>
+      <div class="topo-form">
+        <div class="field"><label>Subredes a dibujar</label><input id="ftN" type="number" min="1" max="${Math.min(count, 8)}" value="${Math.min(count, 4)}"></div>
+        ${DT.map(t => `<div class="field"><label><svg><use href="#${t.icon}"/></svg>${t.l}</label><input id="ft-${t.k}" type="number" min="0" value="${fDefaults(I.hosts - 1)[t.k]}"></div>`).join('')}
+        <button class="btn teal sm" id="ftDraw"><svg><use href="#i-play"/></svg>Dibujar topología</button>
+      </div>
+      <div id="fTopo"></div>
+    </div>`;
+  moreFixed();
+  $('#ftDraw').onclick = drawFixedTopo;
+  drawFixedTopo();
+}
+function fDefaults(cap){
+  const pc = Math.min(3, cap), lap = Math.min(1, cap - pc), srv = 0, prn = Math.min(1, cap - pc - lap);
+  return {pc, lap, srv, prn};
+}
+function drawFixedTopo(){
+  const s = fState, max = Math.min(s.count, 8);
+  const n = Math.min(max, Math.max(1, +$('#ftN').value || 1)); $('#ftN').value = n;
+  const counts = {}; DT.forEach(t => counts[t.k] = Math.max(0, +$('#ft-' + t.k).value || 0));
+  const areas = Array.from({length: n}, (_, k) => ({name: `Subred ${k + 1}`, color: vColors[k % vColors.length], net: s.base.net + k * s.size, p: s.p1, counts}));
+  fTopo = new Topo($('#fTopo')).build(areas);
+  if(s.count > 8) $('#fTopo').insertAdjacentHTML('afterbegin', `<div class="note info t-warn">Se dibujan como máximo 8 de las ${fmt(s.count)} subredes (una interfaz del router por subred).</div>`);
+}
+function moreFixed(){
+  const s = fState, body = $('#fBody'); const end = Math.min(s.count, s.shown + 64);
+  let h = '';
+  for(let k = s.shown; k < end; k++){
+    const n = s.base.net + k*s.size;
+    h += `<tr class="${k===s.curIdx && s.ipGiven!==s.base.net?'hl':''}"><td>${k+1}</td><td class="mono">${ipStr(n)}/${s.p1}</td><td class="mono">${ipStr(n+1)}</td><td class="mono">${ipStr(n+s.size-2)}</td><td class="mono">${ipStr(n+s.size-1)}</td></tr>`;
+  }
+  body.insertAdjacentHTML('beforeend', h); s.shown = end;
+  $('#fMore').innerHTML = s.shown < s.count ? `<button class="btn ghost sm" onclick="moreFixed()">Mostrar 64 más (${fmt(s.count - s.shown)} restantes)</button>` : '';
+}
+$('#fRun').onclick = runFixed;
+runFixed();
+
+/* ================= VLSM ================= */
+function addVRow(name='', hosts='', dev=[2,0,0,0]){
+  const d = document.createElement('div'); d.className = 'vrow';
+  d.innerHTML = `<input class="vn" placeholder="Nombre" value="${esc(name)}"><input class="vh" type="number" min="1" placeholder="Hosts" value="${hosts}"><button class="icon-btn" title="Quitar">×</button>
+    <div class="vdev">${DT.map((t,k) => `<label title="${t.l}"><svg><use href="#${t.icon}"/></svg><input class="vd" data-k="${t.k}" type="number" min="0" value="${dev[k]||0}" aria-label="${t.l}"></label>`).join('')}</div>`;
+  d.querySelector('button').onclick = () => d.remove();
+  $('#vRows').appendChild(d);
+}
+function vExample(){
+  $('#vRows').innerHTML = ''; $('#vBase').value = '192.168.10.0/24';
+  [['Ventas',50,[40,8,0,2]],['Administración',25,[18,4,1,2]],['Soporte',12,[8,3,0,1]],['Gerencia',5,[2,2,0,1]],['Servidores',4,[0,0,3,0]],['Impresión',2,[0,0,0,1]]].forEach(r => addVRow(...r));
+}
+$('#vAdd').onclick = () => addVRow();
+$('#vEx').onclick = () => { vExample(); runVLSM(); };
+function runVLSM(){
+  const err = $('#vErr'); err.textContent = '';
+  const m = $('#vBase').value.trim().match(/^(.+)\/(\d{1,2})$/);
+  if(!m) return err.textContent = 'Formato: 192.168.10.0/24';
+  const ip = parseIP(m[1]), bp = +m[2];
+  if(ip === null || bp < 1 || bp > 30) return err.textContent = 'Red base no válida.';
+  const B = info(ip, bp);
+  const reqs = [...document.querySelectorAll('#vRows .vrow')].map((r,i) => {
+    const counts = {}; r.querySelectorAll('.vd').forEach(x => counts[x.dataset.k] = Math.max(0, +x.value || 0));
+    return {name: r.querySelector('.vn').value.trim() || 'Subred '+(i+1), hosts: +r.querySelector('.vh').value, i, counts};
+  }).filter(r => r.hosts > 0);
+  if(!reqs.length) return err.textContent = 'Agrega al menos una subred con hosts.';
+  const sorted = [...reqs].sort((a,b) => b.hosts - a.hosts);
+  let cur = B.net; const out = [];
+  for(const r of sorted){
+    const h = Math.max(2, Math.ceil(Math.log2(r.hosts + 2)));
+    const size = 2 ** h, p = 32 - h;
+    if(cur + size - 1 > B.bc){ err.textContent = `No hay espacio suficiente para "${r.name}" (${r.hosts} hosts). La red /${bp} se agotó.`; break; }
+    const I = info(cur, p);
+    out.push({...r, p, size, I, color: vColors[r.i % vColors.length]});
+    cur += size;
+  }
+  const used = cur - B.net, total = B.size;
+  const delay = i => `animation-delay:${i*.12}s`;
+  $('#vOut').innerHTML = `
+    <div class="card"><h3>Distribución del espacio · ${ipStr(B.net)}/${bp}</h3>
+      <div class="vbar">${out.map((o,i)=>`<div class="vseg" title="${o.name} · ${ipStr(o.I.net)}/${o.p}" style="width:${o.size/total*100}%;background:${o.color};${delay(i)}">${o.size/total > .06 ? o.name : ''}</div>`).join('')}</div>
+      <div class="vlegend">${out.map(o=>`<span><i style="background:${o.color}"></i>${o.name} /${o.p}</span>`).join('')}<span><i style="background:var(--panel-2);border:1px solid var(--line)"></i>Libre</span></div>
+      <div class="kpis" style="margin-top:14px">
+        <div class="kpi"><small>Usado</small><b>${fmt(used)} / ${fmt(total)}</b></div>
+        <div class="kpi"><small>Libre</small><b>${fmt(total-used)} (${(100-used/total*100).toFixed(1)}%)</b></div>
+        <div class="kpi"><small>Siguiente libre</small><b>${cur <= B.bc ? ipStr(cur) : '—'}</b></div>
+      </div>
+    </div>
+    <div class="card"><h3>Tabla VLSM</h3>
+      <div class="tbl-wrap"><table><thead><tr><th>Subred</th><th>Pedidos</th><th>Disponibles</th><th>Prefijo</th><th>Máscara</th><th>Red</th><th>Rango de hosts</th><th>Broadcast</th><th>Desperdicio</th></tr></thead><tbody>
+      ${out.map(o=>`<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${o.color};margin-right:6px"></span>${o.name}</td><td class="mono">${o.hosts}</td><td class="mono">${fmt(o.I.hosts)}</td><td class="mono">/${o.p}</td><td class="mono">${ipStr(o.I.mask)}</td><td class="mono">${ipStr(o.I.net)}</td><td class="mono">${ipStr(o.I.first)} – ${ipStr(o.I.last)}</td><td class="mono">${ipStr(o.I.bc)}</td><td class="mono">${o.I.hosts - o.hosts}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+`;
+  $('#vTopoCard').innerHTML = `
+    <div class="card"><h3 style="display:flex;align-items:center;gap:8px"><svg style="width:24px;height:24px;color:var(--primary)"><use href="#i-network"/></svg>Topología de red · ${ipStr(B.net)}/${bp}</h3>
+      <p class="small muted" style="margin-top:0">Router central con una interfaz por área. La <b>1.ª IP útil</b> de cada subred es el gateway y las siguientes se reparten a los equipos (PC → Laptop → Servidor → Impresora), según el desglose de cada área. Haz clic en cualquier equipo.</p>
+      <div id="vTopo"></div>
+    </div>`;
+  vTopo = new Topo($('#vTopo')).build(out.map(o => ({name: o.name, color: o.color, net: o.I.net, p: o.p, counts: o.counts})));
+  renderVWorked(ip, bp, B, reqs, sorted, out);
+}
+
+/* ===== VLSM: hoja de desarrollo ===== */
+let vwState = null;
+const wd = t => `style="--d:${t.toFixed(2)}s"`;
+const markAt = (arr, k) => arr.map((v,j) => j===k ? `<mark>${v}</mark>` : v).join('.');
+const octTxt = k => k === 3 ? 'el último octeto' : `el ${ordinal(k)} octeto`;
+function playW(el){ if(!el) return; el.classList.remove('play'); void el.offsetWidth; el.classList.add('play'); }
+function renderVWorked(ip, bp, B, reqs, sorted, out){
+  const el = $('#vWorked');
+  if(!out.length){ el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  const o = oct(ip), bi = bp % 8 === 0 ? Math.min(3, bp/8) : B.idx;
+  const bm = B.mo[bi], bn = o[bi] & bm;
+  const pos = new Map(reqs.map((r,k) => [r, k]));
+  const col = r => vColors[r.i % vColors.length];
+  const t2 = .75 + sorted.length*.12;
+  el.innerHTML = `
+    <div class="vw-top wplay">
+      <div class="w-head">
+        <div><span class="tag amber">Desarrollo paso a paso</span>
+          <h3>Se le otorga la IP <span class="w-ip">${ipStr(ip)} /${bp}</span> · calcule el subneteo VLSM</h3></div>
+        <button class="btn ghost sm" id="vwPlay">↻ Reproducir</button>
+      </div>
+      <ol class="vw-given w-a" ${wd(.1)}>${reqs.map(r => `<li><i style="background:${col(r)}"></i>${esc(r.name)}: <b>${r.hosts}</b> hosts</li>`).join('')}</ol>
+
+      <div class="vw-h w-a" ${wd(.35)}><span>1</span>Primero ordenar las redes de mayor a menor cantidad de hosts y subnetear en ese orden</div>
+      <div class="vw-sort">${sorted.map((r,k) => `<div class="vw-srow w-a" ${wd(.55 + k*.12)}><span class="vw-rank">${k+1}.º</span><i style="background:${col(r)}"></i><span class="nm">${esc(r.name)}</span><span class="dots"></span><span class="ar">⟶</span><b>${r.hosts}</b>${pos.get(r) !== k ? `<span class="vw-moved">antes ${pos.get(r)+1}.º</span>` : '<span class="vw-moved ok">igual</span>'}</div>`).join('')}</div>
+
+      <div class="vw-h w-a" ${wd(t2)}><span>2</span>Segundo calculamos la IP ORIGINAL: ${ipStr(ip)} /${bp}</div>
+      <div class="w-split">
+        <div class="w-a" ${wd(t2 + .2)}>
+          <p class="w-tip">💡 Tomar ${octTxt(bi)}: todo lo que esté con 255 se queda igual, tanto abajo como arriba, y lo que esté con 0 pasa a 0.</p>
+          <div class="w-ipm"><span>IP:</span><span>${markAt(o, bi)}</span><span>MÁSCARA:</span><span>${markAt(B.mo, bi)}</span></div>
+        </div>
+        <div>
+          <div class="w-sub w-a" ${wd(t2 + .35)}>Representación en binario · ${ordinal(bi)} octeto</div>
+          <div class="w-bin"><span class="lb">${o[bi]}</span>${wBits(o[bi], 'n', t2 + .5, .04)}</div>
+          <div class="w-bin"><span class="lb">${bm}</span>${wBits(bm, 'n', t2 + .9, .04)}</div>
+          <div class="w-rule" ${wd(t2 + 1.3)}></div>
+          <div class="w-bin"><span class="lb">AND</span>${wBits(bn, 'res', t2 + 1.45, .04)}<span class="w-eqv w-a" ${wd(t2 + 1.85)}>= <span class="w-big">${bn}</span></span></div>
+        </div>
+      </div>
+      <div class="vw-netline w-a" ${wd(t2 + 2)}>Dirección de red: <b>${ipStr(B.net)} /${bp}</b><span>${fmt(B.size)} direcciones para repartir</span></div>
+
+      <div class="vw-h w-a" ${wd(t2 + 2.2)}><span>3</span>Tercero: subnetear cada área en ese orden</div>
+    </div>
+    <div class="vw-tabs" role="tablist">${out.map((s,k) => `<button class="vw-tab" role="tab" data-k="${k}"><i style="background:${s.color}"></i>Subred ${k+1} · ${esc(s.name)}</button>`).join('')}</div>
+    <div class="vw-body wplay"></div>
+    <div class="vw-nav">
+      <button class="btn ghost sm" id="vwPrev">◀ Anterior</button>
+      <span class="small muted" id="vwPos"></span>
+      <button class="btn ghost sm" id="vwNext">Siguiente subred ▶</button>
+    </div>`;
+  vwState = {B, bp, out, k: 0, t0: t2 + 2.4};
+  el.querySelectorAll('.vw-tab').forEach(b => b.onclick = () => vwShow(+b.dataset.k));
+  $('#vwPrev').onclick = () => vwShow(vwState.k - 1);
+  $('#vwNext').onclick = () => vwShow(vwState.k + 1);
+  $('#vwPlay').onclick = () => { vwShow(0, true); playW($('#vWorked .vw-top')); };
+  vwShow(0, true);
+  playW($('#vWorked .vw-top'));
+}
+function vwShow(k, withIntro){
+  const S = vwState; if(!S) return;
+  k = Math.max(0, Math.min(S.out.length - 1, k)); S.k = k;
+  const s = S.out[k], I = s.I, h = 32 - s.p, need = s.hosts + 2, t = withIntro ? S.t0 : 0;
+  const idx = I.idx, no = oct(I.net), mv = I.mo[idx], sal = I.salto, nOct = no[idx], nxt = nOct + sal;
+  const prev = k ? S.out[k-1] : null;
+  const after = k < S.out.length - 1 ? `→ ${esc(S.out[k+1].name)}` : (I.next !== null && I.next <= S.B.bc ? 'libre' : 'fin de la red');
+  const tries = h > 2 ? `2^${h-1} = ${2**(h-1)} <span class="w-no">✗ no alcanza</span> · ` : '';
+  document.querySelectorAll('#vWorked .vw-tab').forEach((b,j) => { b.classList.toggle('on', j===k); b.setAttribute('aria-selected', j===k); });
+  $('#vwPos').textContent = `Subred ${k+1} de ${S.out.length}`;
+  $('#vwPrev').disabled = k === 0; $('#vwNext').disabled = k === S.out.length - 1;
+  const body = $('#vWorked .vw-body');
+  body.innerHTML = `
+    <div class="vw-sub-h w-a" ${wd(t)}><i style="background:${s.color}"></i>Subred ${k+1} · ${esc(s.name)} · ${s.hosts} hosts</div>
+    <div class="w-formulas">
+      <span class="w-lbl w-a" ${wd(t+.2)}>¿2 elevado a cuánto alcanza?</span><span class="w-eq w-a" ${wd(t+.3)}>${s.hosts} hosts + 2 (red y broadcast) = <b>${need}</b></span>
+      <span class="w-lbl w-a" ${wd(t+.5)}></span><span class="w-eq w-a" ${wd(t+.6)}>${tries}2^${h} = <b>${s.size}</b> <span class="w-ok">✓ ≥ ${need}</span></span>
+      <span class="w-lbl w-a" ${wd(t+.85)}>Para ahorrar red, 32 − el exponente:</span><span class="w-eq w-a" ${wd(t+.95)}>32 − ${h} = <b>/${s.p}</b></span>
+      <span class="w-lbl w-a" ${wd(t+1.15)}>Hosts utilizables:</span><span class="w-eq w-a" ${wd(t+1.25)}>2^${h} − 2 = <b>${fmt(I.hosts)}</b> <span class="muted">(sobran ${fmt(I.hosts - s.hosts)})</span></span>
+    </div>
+    <div class="w-split">
+      <div class="w-a" ${wd(t+1.5)}>
+        <div class="vw-from">
+          ${prev ? `<span>Viene de:</span><span>${ipStr(I.net)}</span><span class="muted">siguiente red de ${esc(prev.name)}</span>`
+                 : `<span>Original:</span><span>${ipStr(S.B.net)} /${S.bp}</span><span></span>`}
+          <span>Nuevo:</span><span><b>${ipStr(I.net)} /${s.p}</b></span><span class="arrow">⟵ ${ipStr(I.mask)}</span>
+        </div>
+        <p class="w-tip">💡 Tomar ${octTxt(idx)}: todo lo que esté con 255 se queda igual, tanto abajo como arriba.</p>
+        <div class="w-ipm"><span>IP:</span><span>${markAt(no, idx)}</span><span>MÁSCARA:</span><span>${markAt(I.mo, idx)}</span></div>
+      </div>
+      <div>
+        <div class="w-sub w-a" ${wd(t+1.7)}>Representación en binario · ${ordinal(idx)} octeto</div>
+        <div class="w-bin"><span class="lb">${nOct}</span>${wBits(nOct, 'n', t+1.85, .04)}</div>
+        <div class="w-bin"><span class="lb">${mv}</span>${wBits(mv, 'n', t+2.25, .04)}<span class="w-tagsalto w-a" ${wd(t+2.65)}>salto de red: 256 − ${mv} = ${sal}</span></div>
+        <div class="w-rule" ${wd(t+2.8)}></div>
+        <div class="w-bin"><span class="lb">AND</span>${wBits(nOct, 'res', t+2.95, .04)}<span class="w-eqv w-a" ${wd(t+3.35)}>= <span class="w-big">${nOct}</span></span></div>
+      </div>
+    </div>
+    <div class="w-results">
+      <span class="r rl w-a" ${wd(t+3.6)}>Dirección de red:</span><span class="r rv n w-a" ${wd(t+3.7)}>${ipStr(I.net)} /${s.p}</span><span class="r ra w-a" ${wd(t+3.7)}></span>
+      <span class="r rl w-a" ${wd(t+3.85)}>Primer host:</span><span class="r rv w-a" ${wd(t+3.95)}>${ipStr(I.first)}</span><span class="r ra w-a" ${wd(t+3.95)}>+1</span>
+      <span class="r rl w-a" ${wd(t+4.1)}>Último host:</span><span class="r rv w-a" ${wd(t+4.2)}>${ipStr(I.last)}</span><span class="r ra w-a" ${wd(t+4.2)}>−1</span>
+      <span class="r rl w-a" ${wd(t+4.35)}>Broadcast:</span><span class="r rv w-a" ${wd(t+4.45)}>${ipStr(I.bc)}</span><span class="r ra w-a" ${wd(t+4.45)}>−1</span>
+      <span class="r rl w-a" ${wd(t+4.6)}>Siguiente red:</span><span class="r rv n w-a" ${wd(t+4.7)}>${I.next !== null ? ipStr(I.next) : '—'}</span><span class="r ra w-a" ${wd(t+4.7)}>${after}</span>
+      <div class="w-rail" ${wd(t+2.7)}><span class="t w-a" ${wd(t+2.7)}>salto de red: ${sal}</span><span class="b w-a" ${wd(t+4.9)}>${nOct} + ${sal} = ${nxt}${nxt === 256 ? ' → acarreo' : ''}</span></div>
+    </div>`;
+  playW(body);
+}
+$('#vRun').onclick = runVLSM;
+vExample(); runVLSM();
+new IntersectionObserver((es, ob) => es.forEach(e => { if(e.isIntersecting && vwState){ vwShow(vwState.k, true); playW($('#vWorked .vw-top')); ob.disconnect(); } }), {threshold:.2}).observe($('#vWorked'));
+
+/* ================= PRÁCTICA ================= */
+const PF = [
+  {k:'mask', l:'Máscara de subred', t:'ip', ph:'255.255.255.x'},
+  {k:'hosts', l:'Hosts utilizables', t:'num', ph:'2^h − 2'},
+  {k:'subs', l:'Subredes (según clase)', t:'num', ph:'2^n'},
+  {k:'salto', l:'Salto de red', t:'num', ph:'256 − ?'},
+  {k:'net', l:'Dirección de red', t:'ip', ph:'x.x.x.x'},
+  {k:'first', l:'Primer host', t:'ip', ph:'red + 1'},
+  {k:'bc', l:'Broadcast', t:'ip', ph:'x.x.x.x'},
+  {k:'last', l:'Último host', t:'ip', ph:'broadcast − 1'},
+  {k:'next', l:'Siguiente red', t:'ip', ph:'red + salto'},
+];
+let P = null;
+function setProblem(ip, p){
+  const I = info(ip, p), cl = I.cls;
+  const sol = {mask: I.mask, hosts: I.hosts, subs: cl.def && p > cl.def ? 2 ** (p - cl.def) : null,
+               salto: I.salto, net: I.net, first: I.first, bc: I.bc, last: I.last, next: I.next};
+  P = {ip, p, I, sol, tries: {}, state: {}};
+  $('#pProblem').textContent = `${ipStr(ip)} /${p}`;
+  $('#pClass').textContent = `Clase ${cl.c}${cl.def ? ' · por defecto /'+cl.def : ' · '+cl.note} · octeto interesante: ${ordinal(I.idx)}`;
+  $('#pFields').innerHTML = PF.map(f => `
+    <div class="pf" id="pf-${f.k}"><label>${f.l}<span class="st"></span></label>
+      <input id="in-${f.k}" placeholder="${f.ph}" autocomplete="off" ${sol[f.k]===null?'disabled value="N/A"':''}>
+      <div class="hint"></div></div>`).join('');
+  PF.forEach(f => { const inp = $('#in-'+f.k); inp.addEventListener('input', () => { const box = $('#pf-'+f.k); box.classList.remove('ok','bad','auto'); box.querySelector('.st').textContent=''; delete P.state[f.k]; updScore(); });
+                    inp.addEventListener('keydown', e => { if(e.key==='Enter') check(); }); });
+  $('#pLog').innerHTML = ''; $('#pLogEmpty').style.display = '';
+  updScore();
+}
+const activeFields = () => PF.filter(f => P.sol[f.k] !== null);
+function showVal(k){ const v = P.sol[k]; return PF.find(f=>f.k===k).t === 'ip' ? (v===null?'—':ipStr(v)) : String(v); }
+function readVal(f){
+  const raw = $('#in-'+f.k).value.trim(); if(!raw) return {empty:true};
+  if(f.t === 'ip'){ const v = parseIP(raw.replace(/\s/g,'')); return v === null ? {invalid:true} : {v}; }
+  const clean = raw.replace(/[\s.,]/g,''); return /^\d+$/.test(clean) ? {v: +clean} : {invalid:true};
+}
+function hintFor(k, tries, val){
+  const I = P.I, o = oct(P.ip), idx = I.idx, mv = I.mo[idx], s = I.salto, cl = I.cls;
+  const netOct = Math.floor(o[idx]/s)*s;
+  // ¿Coincide con otro campo?
+  if(val !== undefined){
+    const tIp = PF.find(f=>f.k===k).t;
+    if(k==='subs' && cl.def !== idx*8 && val === 2 ** (P.p - idx*8)) return `${val} son las subredes dentro del bloque /${idx*8}. Para el total usa el prefijo por defecto de la clase ${cl.c} (/${cl.def}): 2^(${P.p} − ${cl.def}).`;
+    if(tIp==='ip') for(const f of PF){ if(f.k!==k && f.t===tIp && P.sol[f.k]===val) return `Ese valor corresponde a <b>${f.l.toLowerCase()}</b>, no a este campo.`; }
+    if(tIp==='ip' && val === P.ip && k!=='net') return 'Ese es la IP original del ejercicio; aquí se pide otra dirección.';
+  }
+  const H = {
+    mask: [`/${P.p} = ${P.p} bits en 1. Cada 255 son 8 bits; el resto de bits va en el ${ordinal(idx)} octeto.`,
+           `Quedan ${P.p - idx*8} bits en 1 en el ${ordinal(idx)} octeto → mira la tabla binario/decimal.`],
+    hosts: [`Hosts = 2^h − 2, con h = 32 − prefijo.`, `h = 32 − ${P.p} = ${32-P.p} → 2^${32-P.p} − 2 = ?`],
+    subs: [`Subredes = 2^n con n = prefijo − prefijo por defecto de la clase ${cl.c}.`, `n = ${P.p} − ${cl.def} = ${P.p - cl.def} → 2^${P.p-cl.def} = ?`],
+    salto: [`Salto = 256 − valor de la máscara en el octeto interesante (${ordinal(idx)}).`, `256 − ${mv} = ?`],
+    net: [`Copia los octetos con 255, pon 0 donde la máscara es 0, y en el ${ordinal(idx)} octeto busca el múltiplo de ${s} ≤ ${o[idx]}.`,
+          `${o[idx]} ÷ ${s} = ${Math.floor(o[idx]/s)} → ${Math.floor(o[idx]/s)} × ${s} = ? (o haz ${o[idx]} AND ${mv} en binario)`],
+    first: [`Primer host = dirección de red + 1.`, `Red ${ipStr(I.net)} → suma 1 al último octeto.`],
+    bc: [`Broadcast = siguiente red − 1 (todos los bits de host en 1).`, `En el ${ordinal(idx)} octeto: ${netOct} + ${s} − 1 = ${netOct+s-1}; los octetos a la derecha quedan en 255.`],
+    last: [`Último host = broadcast − 1.`, `Broadcast ${ipStr(I.bc)} → resta 1 al último octeto.`],
+    next: [`Siguiente red = red + salto en el octeto interesante.`, `${netOct} + ${s} = ${netOct+s} en el ${ordinal(idx)} octeto${netOct+s===256?' (256 → pasa a 0 y suma 1 al octeto anterior)':''}; a la derecha, 0.`],
+  };
+  return H[k][Math.min(tries, 2) - 1] || H[k][1];
+}
+function check(){
+  if(!P) return;
+  activeFields().forEach(f => {
+    if(P.state[f.k] === 'auto') return;
+    const box = $('#pf-'+f.k), r = readVal(f), st = box.querySelector('.st');
+    box.classList.remove('ok','bad','auto'); void box.offsetWidth;
+    if(!r.empty && !r.invalid && r.v === P.sol[f.k]){ box.classList.add('ok'); st.textContent = '✓'; P.state[f.k] = 'ok'; return; }
+    P.tries[f.k] = (P.tries[f.k]||0) + 1; P.state[f.k] = 'bad';
+    box.classList.add('bad'); st.textContent = '✗';
+    box.querySelector('.hint').innerHTML = '💡 ' + (r.empty ? 'Campo vacío. ' + hintFor(f.k, 1) : r.invalid ? `Formato no válido (${f.t==='ip'?'usa x.x.x.x':'escribe un número'}). ` + hintFor(f.k, 1) : hintFor(f.k, P.tries[f.k], r.v));
+  });
+  updScore();
+}
+function explain(k){
+  const I = P.I, o = oct(P.ip), idx = I.idx, mv = I.mo[idx], s = I.salto, cl = I.cls, netOct = Math.floor(o[idx]/s)*s;
+  const E = {
+    mask: [`Máscara`, `/${P.p} = ${P.p} bits en 1 → ${idx} octeto(s) en 255 y ${P.p-idx*8} bits en el ${ordinal(idx)} octeto (${bin8s(mv)} = ${mv}).`, ipStr(I.mask)],
+    hosts: [`Hosts utilizables`, `Bits de host: 32 − ${P.p} = ${32-P.p}.`, `2^${32-P.p} − 2 = ${fmt(I.hosts)}`],
+    subs: [`Subredes`, `Clase ${cl.c} (/${cl.def}). Bits prestados: ${P.p} − ${cl.def} = ${P.p-cl.def}.`, `2^${P.p-cl.def} = ${fmt(P.sol.subs||0)}`],
+    salto: [`Salto`, `Octeto interesante: el ${ordinal(idx)} (máscara ${mv}).`, `256 − ${mv} = ${s}`],
+    net: [`Dirección de red`, `AND en el ${ordinal(idx)} octeto: ${bin8s(o[idx])} AND ${bin8s(mv)} = ${bin8s(o[idx]&mv)}.`, `${o[idx]} → ${netOct} · Red = ${ipStr(I.net)}`],
+    first: [`Primer host`, `Red + 1.`, `${ipStr(I.net)} + 1 = ${ipStr(I.first)}`],
+    bc: [`Broadcast`, `Siguiente red − 1 (bits de host en 1).`, `${ipStr(I.bc)}`],
+    last: [`Último host`, `Broadcast − 1.`, `${ipStr(I.bc)} − 1 = ${ipStr(I.last)}`],
+    next: [`Siguiente red`, `Red + salto en el ${ordinal(idx)} octeto: ${netOct} + ${s} = ${netOct+s}.`, I.next!==null ? ipStr(I.next)+' /'+P.p : '—'],
+  }[k];
+  $('#pLogEmpty').style.display = 'none';
+  $('#pLog').insertAdjacentHTML('beforeend', `<li><b>${E[0]}:</b> ${E[1]}<div class="calc">${E[2]}</div></li>`);
+  $('#pLog').lastElementChild.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+function autoFill(f){
+  const box = $('#pf-'+f.k);
+  $('#in-'+f.k).value = showVal(f.k);
+  box.classList.remove('ok','bad'); box.classList.add('auto'); box.querySelector('.st').textContent = '⚙';
+  P.state[f.k] = 'auto'; explain(f.k);
+}
+function stepAuto(){
+  if(!P) return;
+  const f = activeFields().find(f => { if(P.state[f.k]==='auto') return false; const r = readVal(f); return r.empty || r.invalid || r.v !== P.sol[f.k]; });
+  if(!f){ check(); return; }
+  autoFill(f); updScore();
+}
+function updScore(){
+  const a = activeFields(); const ok = a.filter(f => P.state[f.k]==='ok').length, au = a.filter(f => P.state[f.k]==='auto').length;
+  $('#pScore').innerHTML = `${ok} / ${a.length} <span class="small muted" style="font-weight:400">correctos${au?` · ${au} autocompletados`:''}</span>`;
+  $('#pBar').style.width = ((ok+au)/a.length*100)+'%';
+  if(ok === a.length) $('#pScore').innerHTML += ' <span class="tag teal">¡Excelente! 🎉</span>';
+}
+function randProblem(){
+  const c = ['A','B','C'][Math.floor(Math.random()*3)], r = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+  const f = c==='A' ? r(1,126) : c==='B' ? r(128,191) : r(192,223);
+  const p = c==='A' ? r(9,30) : c==='B' ? r(17,30) : r(25,30);
+  setProblem(f*16777216 + r(0,255)*65536 + r(0,255)*256 + r(1,254), p);
+}
+$('#pRand').onclick = () => { $('#pErr').textContent=''; randProblem(); };
+$('#pLoad').onclick = () => {
+  const ip = parseIP($('#pIp').value), p = +$('#pP').value; $('#pErr').textContent = '';
+  if(ip === null) return $('#pErr').textContent = 'IP no válida.';
+  if(!(p >= 1 && p <= 30)) return $('#pErr').textContent = 'Prefijo entre /1 y /30.';
+  setProblem(ip, p);
+};
+$('#pCheck').onclick = check;
+$('#pStep').onclick = stepAuto;
+$('#pSolve').onclick = () => { activeFields().forEach(f => { const r = readVal(f); if(P.state[f.k]!=='auto' && !( !r.empty && r.v === P.sol[f.k])) autoFill(f); }); check(); };
+$('#pClear').onclick = () => setProblem(P.ip, P.p);
+setProblem(parseIP('172.163.22.55'), 28);
+
+/* ===== Práctica VLSM ===== */
+const QF = [
+  {k:'p',     l:'Prefijo',     t:'pref', ph:'/xx'},
+  {k:'mask',  l:'Máscara',     t:'ip',   ph:'255.255.255.x'},
+  {k:'net',   l:'Red',         t:'ip',   ph:'x.x.x.x'},
+  {k:'first', l:'Primer host', t:'ip',   ph:'red + 1'},
+  {k:'last',  l:'Último host', t:'ip',   ph:'broadcast − 1'},
+  {k:'bc',    l:'Broadcast',   t:'ip',   ph:'red + bloque − 1'},
+];
+const Q_ORDER = ['p','mask','net','first','bc','last'];
+let Q = null;
+function vlsmAlloc(net, bp, reqs){
+  const base = info(net, bp);
+  const sorted = [...reqs].sort((a,b) => b.hosts - a.hosts || a.i - b.i);
+  let cur = base.net; const sol = [];
+  for(const [pos, r] of sorted.entries()){
+    const h = Math.max(2, Math.ceil(Math.log2(r.hosts + 2))), size = 2 ** h, p = 32 - h;
+    if(cur + size - 1 > base.bc) return {err: `"${r.name}" (${r.hosts} hosts) no cabe: la red ${ipStr(base.net)}/${bp} se queda sin espacio.`};
+    sol.push({...r, pos, h, size, p, I: info(cur, p), prev: sol[sol.length - 1] || null});
+    cur += size;
+  }
+  return {base, bp, sol};
+}
+function setVlsm(net, bp, reqs, shuffle){
+  $('#qErr').textContent = '';
+  const A = vlsmAlloc(net, bp, reqs);
+  if(A.err){ $('#qErr').textContent = A.err; return false; }
+  let rows = [...reqs];
+  if(shuffle && rows.length > 1){
+    for(let k = rows.length - 1; k > 0; k--){ const j = Math.floor(Math.random() * (k + 1)); [rows[k], rows[j]] = [rows[j], rows[k]]; }
+    if(rows.every((r, k) => !k || rows[k-1].hosts >= r.hosts)) rows.push(rows.shift());
+  }
+  Q = {base: A.base, bp, rows, sol: {}, order: A.sol, state: {}, tries: {}, intro: false};
+  A.sol.forEach(s => Q.sol[s.i] = s);
+  $('#qProblem').textContent = `${ipStr(A.base.net)} /${bp}`;
+  $('#qReqs').innerHTML = rows.map(r => `<span>${esc(r.name)} · ${r.hosts} hosts</span>`).join('');
+  $('#qBody').innerHTML = rows.map(r => `<tr data-i="${r.i}"><td>${esc(r.name)}</td><td class="mono">${r.hosts}</td>${
+    QF.map(f => `<td><input id="q-${r.i}-${f.k}" class="${f.k==='p'?'qp':''}" placeholder="${f.ph}" autocomplete="off" aria-label="${esc(r.name)} ${f.l}"></td>`).join('')}</tr>`).join('');
+  rows.forEach(r => QF.forEach(f => {
+    const inp = $(`#q-${r.i}-${f.k}`);
+    inp.addEventListener('input', () => { inp.classList.remove('ok','bad','auto'); inp.title = ''; delete Q.state[r.i+'.'+f.k]; updQScore(); });
+    inp.addEventListener('keydown', e => { if(e.key === 'Enter') checkQ(); });
+  }));
+  $('#qHint').innerHTML = ''; $('#qLog').innerHTML = ''; $('#qLogEmpty').style.display = '';
+  updQScore();
+  return true;
+}
+function solQ(i, k){ const s = Q.sol[i]; return k === 'p' ? s.p : k === 'mask' ? s.I.mask : s.I[k]; }
+function showQ(i, k){ return k === 'p' ? '/' + solQ(i, k) : ipStr(solQ(i, k)); }
+function readQ(i, k){
+  const raw = $(`#q-${i}-${k}`).value.trim(); if(!raw) return {empty:true};
+  if(k === 'p'){ const m = raw.match(/^\/?\s*(\d{1,2})$/); return m && +m[1] <= 32 ? {v: +m[1]} : {invalid:true}; }
+  const v = parseIP(raw.replace(/\s/g,'')); return v === null ? {invalid:true} : {v};
+}
+const qLabel = k => QF.find(f => f.k === k).l;
+function hintQ(i, k, tries, val){
+  const s = Q.sol[i], pv = s.prev;
+  if(val !== undefined){
+    for(const f of QF) if(f.k !== k && f.k !== 'p' && k !== 'p' && solQ(i, f.k) === val) return `Ese valor es el <b>${f.l.toLowerCase()}</b> de esta misma área.`;
+    if(k !== 'p' && k !== 'mask') for(const o of Q.order) if(o.i !== i && solQ(o.i, k) === val) return `Ese es el valor de <b>${esc(o.name)}</b>. ¿Respetaste el orden de mayor a menor? ${esc(s.name)} va en la posición ${s.pos + 1}.`;
+  }
+  const idx = s.I.idx;
+  const H = {
+    p:    [`${s.hosts} hosts + 2 (red y broadcast) = ${s.hosts + 2}. Busca la potencia de 2 que sea ≥ ${s.hosts + 2}.`,
+           `2^${s.h} = ${s.size} ≥ ${s.hosts + 2} → ${s.h} bits de host → prefijo = 32 − ${s.h}.`],
+    mask: [`Convierte el prefijo a máscara: cada 8 bits en 1 son un 255.`,
+           `/${s.p}: ${idx} octeto(s) en 255 y ${s.p - idx*8} bits en 1 en el ${ordinal(idx)} octeto → mira la tabla binario/decimal.`],
+    net:  pv ? [`Ordenadas de mayor a menor, ${esc(s.name)} va en la posición ${s.pos + 1}, justo después de ${esc(pv.name)}.`,
+                `${esc(pv.name)} termina en ${ipStr(pv.I.bc)} (su broadcast) → esta red empieza en la dirección siguiente.`]
+             : [`${esc(s.name)} es la que más hosts necesita: va primero.`, `La primera subred empieza en la red base ${ipStr(Q.base.net)}.`],
+    first:[`Primer host = dirección de red + 1.`, `Red ${ipStr(s.I.net)} + 1.`],
+    bc:   [`Broadcast = red + tamaño del bloque − 1.`, `Bloque de ${s.size} direcciones: ${ipStr(s.I.net)} + ${s.size} − 1.`],
+    last: [`Último host = broadcast − 1.`, `Broadcast ${ipStr(s.I.bc)} − 1.`],
+  }[k];
+  return H[Math.min(tries, 2) - 1];
+}
+function checkQ(){
+  if(!Q) return;
+  const hints = [];
+  Q.order.forEach(s => QF.forEach(f => {
+    const key = s.i + '.' + f.k, inp = $(`#q-${s.i}-${f.k}`);
+    if(Q.state[key] === 'auto') return;
+    const r = readQ(s.i, f.k);
+    inp.classList.remove('ok','bad'); void inp.offsetWidth;
+    if(!r.empty && !r.invalid && r.v === solQ(s.i, f.k)){ inp.classList.add('ok'); Q.state[key] = 'ok'; inp.title = ''; return; }
+    Q.tries[key] = (Q.tries[key] || 0) + 1; Q.state[key] = 'bad'; inp.classList.add('bad');
+    const h = r.empty ? 'Campo vacío. ' + hintQ(s.i, f.k, 1)
+            : r.invalid ? `Formato no válido (${f.k === 'p' ? 'escribe /26 o 26' : 'usa x.x.x.x'}). ` + hintQ(s.i, f.k, 1)
+            : hintQ(s.i, f.k, Q.tries[key], r.v);
+    inp.title = h.replace(/<[^>]+>/g, '');
+    if(!r.empty || hints.length < 3) hints.push(`💡 <b>${esc(s.name)} · ${f.l}:</b> ${h}`);
+  }));
+  $('#qHint').innerHTML = hints.slice(0, 6).map(h => `<div>${h}</div>`).join('') + (hints.length > 6 ? `<div>… y ${hints.length - 6} campos más por revisar (pasa el cursor sobre cada campo rojo para ver su pista).</div>` : '');
+  updQScore();
+}
+function qIntro(){
+  if(Q.intro) return; Q.intro = true;
+  $('#qLogEmpty').style.display = 'none';
+  $('#qLog').insertAdjacentHTML('beforeend', `<li><b>Ordenar de mayor a menor:</b> ${Q.order.map(s => `${esc(s.name)} (${s.hosts})`).join(' → ')}<div class="calc">Se asigna desde ${ipStr(Q.base.net)}/${Q.bp}</div></li>`);
+}
+function explainQ(i, k){
+  const s = Q.sol[i], I = s.I, pv = s.prev;
+  const txt = {
+    p:    [`${s.hosts} + 2 = ${s.hosts + 2} → 2^${s.h} = ${s.size} direcciones.`, `32 − ${s.h} = /${s.p}`],
+    mask: [`/${s.p} → ${bin8s(I.mo[I.idx])} en el ${ordinal(I.idx)} octeto.`, ipStr(I.mask)],
+    net:  pv ? [`Posición ${s.pos + 1}: empieza justo después del broadcast de ${esc(pv.name)}.`, `${ipStr(pv.I.bc)} + 1 = ${ipStr(I.net)}`]
+             : [`Posición 1 (la más grande): empieza en la red base.`, ipStr(I.net)],
+    first:[`Red + 1.`, `${ipStr(I.net)} + 1 = ${ipStr(I.first)}`],
+    bc:   [`Red + bloque − 1.`, `${ipStr(I.net)} + ${s.size} − 1 = ${ipStr(I.bc)}`],
+    last: [`Broadcast − 1.`, `${ipStr(I.bc)} − 1 = ${ipStr(I.last)}`],
+  }[k];
+  qIntro();
+  $('#qLog').insertAdjacentHTML('beforeend', `<li><b>${esc(s.name)} · ${qLabel(k)}:</b> ${txt[0]}<div class="calc">${txt[1]}</div></li>`);
+  $('#qLog').lastElementChild.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+function autoQ(i, k, explain = true){
+  const inp = $(`#q-${i}-${k}`);
+  inp.value = showQ(i, k); inp.classList.remove('ok','bad'); inp.classList.add('auto'); inp.title = '';
+  Q.state[i + '.' + k] = 'auto';
+  $('#qHint').innerHTML = '';
+  if(explain) explainQ(i, k);
+  const tr = inp.closest('tr'); document.querySelectorAll('.qtbl tr.focus').forEach(x => x.classList.remove('focus')); tr.classList.add('focus');
+}
+function pendingQ(){
+  for(const s of Q.order) for(const k of Q_ORDER){
+    if(Q.state[s.i + '.' + k] === 'auto') continue;
+    const r = readQ(s.i, k); if(r.empty || r.invalid || r.v !== solQ(s.i, k)) return [s.i, k];
+  }
+  return null;
+}
+function updQScore(){
+  const keys = Q.order.flatMap(s => QF.map(f => s.i + '.' + f.k));
+  const ok = keys.filter(k => Q.state[k] === 'ok').length, au = keys.filter(k => Q.state[k] === 'auto').length;
+  $('#qScore').innerHTML = `${ok} / ${keys.length} <span class="small muted" style="font-weight:400">correctos${au ? ` · ${au} autocompletados` : ''}</span>` + (ok === keys.length ? ' <span class="tag teal">¡VLSM dominado! 🎉</span>' : '');
+  $('#qBar').style.width = ((ok + au) / keys.length * 100) + '%';
+}
+const Q_NAMES = ['Ventas','Administración','Soporte','Gerencia','Contabilidad','RR.HH.','Laboratorio','Bodega','Marketing','Sistemas','Recepción','Producción'];
+function randVlsm(){
+  const r = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  for(let tries = 0; tries < 80; tries++){
+    const bp = [24,24,24,23,22][r(0,4)];
+    const kind = r(0,2);
+    const ip = kind === 0 ? parseIP(`192.168.${r(0,254)}.0`) : kind === 1 ? parseIP(`172.${r(16,31)}.${r(0,254)}.0`) : parseIP(`10.${r(0,255)}.${r(0,254)}.0`);
+    const net = info(ip, bp).net, cap = 2 ** (32 - bp);
+    const n = r(3, 5), names = [...Q_NAMES].sort(() => Math.random() - .5).slice(0, n);
+    const reqs = names.map((name, i) => ({name, i, hosts: i === 0 ? r(Math.floor(cap/8), Math.floor(cap/3)) : r(2, Math.floor(cap/6))}));
+    if(Math.random() < .4) reqs.push({name:'Enlace WAN', i: reqs.length, hosts: 2});
+    const A = vlsmAlloc(net, bp, reqs);
+    if(!A.err && new Set(A.sol.map(s => s.p)).size >= 3) return setVlsm(net, bp, reqs, true);
+  }
+}
+$('#qRand').onclick = randVlsm;
+$('#qLoad').onclick = () => {
+  const err = $('#qErr'); err.textContent = '';
+  const m = $('#qBase').value.trim().match(/^(.+)\/(\d{1,2})$/);
+  if(!m || parseIP(m[1]) === null || +m[2] < 1 || +m[2] > 30) return err.textContent = 'Red base no válida. Formato: 192.168.20.0/24';
+  const parts = $('#qReqIn').value.split(/[,;\n]+/).map(x => x.trim()).filter(Boolean);
+  const reqs = [];
+  for(const [k, p] of parts.entries()){
+    const mm = p.match(/^(.*?)[\s:=]*(\d+)$/);
+    if(!mm || +mm[2] < 1) return err.textContent = `No entiendo "${p}". Usa: Nombre hosts (ej. Ventas 50).`;
+    reqs.push({name: mm[1].trim() || 'Área ' + String.fromCharCode(65 + k), hosts: +mm[2], i: k});
+  }
+  if(!reqs.length) return err.textContent = 'Escribe al menos un área, por ejemplo: Ventas 50, Admin 25';
+  if(reqs.length > 10) return err.textContent = 'Máximo 10 áreas.';
+  const net = info(parseIP(m[1]), +m[2]).net;
+  setVlsm(net, +m[2], reqs, false);
+};
+$('#qCheck').onclick = checkQ;
+$('#qStep').onclick = () => { if(!Q) return; const p = pendingQ(); if(!p) return checkQ(); autoQ(p[0], p[1]); updQScore(); };
+$('#qSolve').onclick = () => { if(!Q) return; qIntro(); let p; while((p = pendingQ())) autoQ(p[0], p[1], false);
+  $('#qLog').insertAdjacentHTML('beforeend', `<li><b>Resuelto:</b> se completaron los campos restantes. Usa «Autocompletar paso a paso» en otro ejercicio para ver el porqué de cada valor.</li>`); checkQ(); };
+$('#qClear').onclick = () => { if(Q) setVlsm(Q.base.net, Q.bp, Q.rows, false); };
+setVlsm(parseIP('192.168.10.0'), 24, [{name:'Soporte',hosts:12,i:0},{name:'Ventas',hosts:50,i:1},{name:'Gerencia',hosts:5,i:2},{name:'Administración',hosts:25,i:3}], false);
+
+/* ===== Selector de modo ===== */
+const MODE_DESC = {
+  fija: 'Todas las subredes del mismo tamaño: analiza una IP con su prefijo.',
+  vlsm: 'Cada área recibe solo el bloque que necesita: completa la tabla de asignación.',
+};
+document.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+  const m = b.dataset.mode;
+  document.querySelectorAll('.seg button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
+  $('#pmFija').hidden = m !== 'fija'; $('#pmVlsm').hidden = m !== 'vlsm';
+  $('#modeDesc').textContent = MODE_DESC[m];
+});
+
+/* ================= REFERENCIA ================= */
+let bt = '';
+for(let n=0;n<=8;n++){
+  const d = 256 - 2**(8-n);
+  bt += `<tr><td class="mono">${n}</td><td class="mono">${bin8s(d)}</td><td class="mono"><b>${d}</b></td><td class="mono">${256-d}</td><td class="mono">/${24+n}</td><td class="mono">${n>=7 ? '—' : 2**(8-n)-2}</td></tr>`;
+}
+$('#binTbl').innerHTML = bt;
+const conv = $('#octConv'); const bits = [0,0,0,0,0,0,0,0];
+function updConv(){
+  const on = bits.map((b,i)=> b ? 2**(7-i) : 0); const v = on.reduce((a,b)=>a+b,0);
+  conv.querySelectorAll('button').forEach((b,i)=>{ b.classList.toggle('on', !!bits[i]); b.textContent = bits[i]; });
+  const parts = on.filter(x=>x);
+  $('#octSum').innerHTML = `${bits.join('').replace(/(.{4})/,'$1 ')} = ${parts.length? parts.join(' + ') + ' = ' : ''}<b>${v}</b>`;
+  conv.querySelector('.conv-out').textContent = v;
+}
+conv.innerHTML = [...Array(8)].map((_,i)=>`<div class="ob"><small>${2**(7-i)}</small><button data-i="${i}">0</button></div>`).join('') + '<div class="conv-out">0</div>';
+conv.querySelectorAll('button').forEach(b => b.onclick = () => { bits[b.dataset.i] ^= 1; updConv(); });
+updConv();
+$('#powGrid').innerHTML = [...Array(16)].map((_,i)=>`<div class="pw"><div class="e">2<sup>${i}</sup></div><div class="val">${fmt(2**i)}</div><div class="h">${i>=2 ? 'hosts: '+fmt(2**i-2) : '&nbsp;'}</div></div>`).join('');
+let ct = '';
+[8,16,20,22,23,24,25,26,27,28,29,30].forEach(p => { const I = info(0, p); ct += `<tr><td class="mono"><b>/${p}</b></td><td class="mono">${ipStr(I.mask)}</td><td class="mono">${I.salto} (${ordinal(I.idx)} oct.)</td><td class="mono">${fmt(I.size)}</td><td class="mono">${fmt(I.hosts)}</td></tr>`; });
+$('#cidrTbl').innerHTML = ct;
+</script>
+</body>
+</html>
